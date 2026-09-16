@@ -169,37 +169,6 @@
       ]
     },
     {
-      "id": "11",
-      "name": "Bita Yeganeh",
-      "title": "it",
-      "phone": "0402550957",
-      "email": "b.yeganeh85@gmail.com",
-      "animal": "Owl",
-      "startDate": "1.5.2026",
-      "salary": "4500",
-      "location": "Helsinki",
-      "department": "IT",
-      "skills": [
-        "HTML"
-      ]
-    },
-    {
-      "id": "12",
-      "name": "Bita Yeganeh",
-      "title": "fgh",
-      "phone": "0402550957",
-      "email": "b.yeganeh85@gmail.com",
-      "animal": "bvn",
-      "startDate": "1.5.2026",
-      "salary": "87654",
-      "location": "JP",
-      "department": "CONTENT",
-      "skills": [
-        "React",
-        "sql"
-      ]
-    },
-    {
       "id": "13",
       "name": "Bita Yeganeh",
       "title": "CEO",
@@ -212,21 +181,6 @@
       "department": "Managment",
       "skills": [
         "d"
-      ]
-    },
-    {
-      "id": 1764420389798,
-      "name": "hhh",
-      "title": "",
-      "salary": "",
-      "phone": "",
-      "email": "",
-      "animal": "",
-      "startDate": "",
-      "location": "",
-      "department": "",
-      "skills": [
-        ""
       ]
     }
   ]

@@ -10,6 +10,7 @@ import ErrorPage from './pages/ErrorPage';
 import useAxios from './hooks/useAxios';
 import EmployeesTable from './components/EmployeesTable';
 import EmployeeTablePage from './pages/EmployeeTablePage';
+import { API_URL } from './config';
 function App() {
   // ----------------------------
   // State
@@ -54,11 +55,14 @@ function App() {
     );
   };
 
+  const deleteEmployee = (id) => {
+    setEmployees((prev) => prev.filter((employee) => employee.id !== id));
+  };
+
   const { get, post } = useAxios();
 
-  // Use useEffect and axios.get() to fetch employees from https://hrapp-bec7.onrender.com/employees.
   useEffect(() => {
-    get('https://hrapp-bec7.onrender.com/employees').then((response) => {
+    get(`${API_URL}/employees`).then((response) => {
       setEmployees(response.data);
     });
   }, []);
@@ -68,7 +72,7 @@ function App() {
   // ----------------------------
   // Add new employee
   const onAddEmployee = () => {
-    post('https://hrapp-bec7.onrender.com/employees', {
+    post(`${API_URL}/employees`, {
       id: (employees.length + 1).toString(),
       ...formData,
       skills: formData.skills.split(',').map((skill) => skill.trim()),
@@ -102,6 +106,7 @@ function App() {
               <PersonList
                 employees={employees}
                 updateEmployee={updateEmployee}
+                deleteEmployee={deleteEmployee}
               />
             }
           />
