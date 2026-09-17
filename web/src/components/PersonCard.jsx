@@ -5,6 +5,7 @@ import { calculateWorkExperience } from '../utils/calculateWorkExperience';
 import useAxios from '../hooks/useAxios';
 import React from 'react';
 import { Button, Card, CardContent, Typography } from '@mui/material';
+import { API_URL } from '../config';
 
 const PersonCard = ({
   id,
@@ -76,7 +77,7 @@ const PersonCard = ({
       skills: formData.skills.split(',').map((skill) => skill.trim()),
     };
 
-    put(`https://hrapp-bec7.onrender.com/employees/${id}`, updatedEmployee)
+    put(`${API_URL}/employees/${id}`, updatedEmployee)
       .then((res) => {
         updateEmployee(res.data);
         setIsEditing(false);
@@ -90,7 +91,7 @@ const PersonCard = ({
     if (!window.confirm('Are you sure you want to delete this employee?')) {
       return;
     }
-    del(`https://hrapp-bec7.onrender.com/employees/${id}`)
+    del(`${API_URL}/employees/${id}`)
       .then(() => {
         deleteEmployee(id);
       })
