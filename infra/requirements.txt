@@ -1,0 +1,4 @@
+azure-identity>=1.25,<2
+azure-mgmt-resource>=23,<24
+azure-mgmt-web>=10,<11
+python-dotenv>=1.0,<2
