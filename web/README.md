@@ -1,3 +1,5 @@
+
+## HR Web App
 <h1 align="center">🌟 HR Management System (React + JSON Server API) 🌟</h1>
 
 <p align="center">
@@ -6,23 +8,7 @@ A modern, user-friendly HR management web application built with <strong>React</
 This system enables teams to manage employees, track work experience, and automate HR reminders.
 </p>
 
-<p align="center">
-  <a href="https://hrapp-1-68tb.onrender.com"><strong>🌐 Live Demo</strong></a> •
-  <a href="https://hrapp-bec7.onrender.com/employees"><strong>📡 Backend API</strong></a>
-</p>
-
-<p align="center">
-  <img src="https://img.shields.io/badge/React-18-blue" />
-  <img src="https://img.shields.io/badge/JSON--Server-API-green" />
-  <img src="https://img.shields.io/badge/Status-Live-success" />
-  <img src="https://img.shields.io/badge/Maintainer-Bita%20Yeganeh-pink" />
-</p>
-
----
-
-## ⭐ Features
-
-### 👥 Employee Management
+#### 👥 Employee Management
 
 - 📄 View all employees
 - ➕ Add new employees
@@ -32,7 +18,7 @@ This system enables teams to manage employees, track work experience, and automa
 
 ---
 
-### 📅 Work Experience Automation
+#### 📅 Work Experience Automation
 
 Automatically calculates work experience based on `hireDate`:
 
@@ -43,7 +29,7 @@ Automatically calculates work experience based on `hireDate`:
 
 ---
 
-### 🎨 Clean & Modular UI
+#### 🎨 Clean & Modular UI
 
 - 🧩 Employee cards with emoji avatars
 - 🔄 Edit & display modes
@@ -53,7 +39,7 @@ Automatically calculates work experience based on `hireDate`:
 
 ---
 
-### 🧩 Reusable Architecture
+#### 🧩 Reusable Architecture
 
 - ⚙ Custom `useAxios()` hook
 - 🔧 Utilities:
@@ -63,7 +49,7 @@ Automatically calculates work experience based on `hireDate`:
 
 ---
 
-## 📁 Project Structure
+### 📁 Project Structure
 
 src/
 ├── App.jsx
@@ -126,23 +112,13 @@ Converts animal names like:
 
 ---
 
-🌐 Deployment:
+👤 Authors
 
-The application is fully deployed on Render.
-
-Service Link:
-
-🎨 Frontend:
-https://hrapp-1-68tb.onrender.com
-
-🗄 Backend API:
-https://hrapp-bec7.onrender.com/employees
-
----
-
-👤 Author
 Bita Yeganeh
 🔗 GitHub: https://github.com/BitaYeganeh
+
+Petri Alapiessa
+🔗 GitHub: https://github.com/palapiessa
 
 📜 License
 
