@@ -11,7 +11,6 @@ import {
 } from '@mui/material';
 import { getAnimalEmoji } from '../utils/animalEmoji';
 import useAxios from '../hooks/useAxios';
-import { API_URL } from '../config';
 
 const EmployeesTable = () => {
   const axiosInstance = useAxios();
@@ -21,7 +20,7 @@ const EmployeesTable = () => {
   // Fetch employees on mount
   useEffect(() => {
     axiosInstance
-      .get(`${API_URL}/employees`)
+      .get('https://hrapp-bec7.onrender.com/employees')
       .then((res) => setData(res.data))
       .catch((err) => setError(err))
       .finally(() => setLoading(false));

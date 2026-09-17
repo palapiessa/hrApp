@@ -1,12 +1,21 @@
 import PersonCard from './PersonCard';
 import styles from './PersonList.module.css';
 import { calculateWorkExperience } from '../utils/calculateWorkExperience';
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 
-const PersonList = ({ employees, updateEmployee, deleteEmployee }) => {
+const PersonList = ({ employees, updateEmployee }) => {
+  const [employeeList, setEmployeeList] = useState(employees);
+
+  useEffect(() => {
+    setEmployeeList(employees);
+  }, [employees]);
+
+  const deleteEmployee = (id) => {
+    setEmployeeList((prevList) => prevList.filter((emp) => emp.id !== id));
+  };
   return (
     <div className={styles.listContainer}>
-      {employees.map((employee) => (
+      {employeeList.map((employee) => (
         <PersonCard
           key={employee.id}
           {...employee}
