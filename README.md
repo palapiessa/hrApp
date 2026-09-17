@@ -31,9 +31,10 @@ with Azure CLI and provide the target subscription:
 python3 -m venv .venv
 . .venv/bin/activate
 pip install -r infra/requirements.txt
-az login
-export AZURE_SUBSCRIPTION_ID="$(az account show --query id --output tsv)"
-python infra/provision_static_web_app.py
+az login --tenant <your tenant ID>
+- login with Edge
+- set subscription ID to .env
+.venv/bin/python infra/provision_static_web_app.py
 ```
 
 Optional arguments and their environment variable equivalents:
@@ -44,3 +45,20 @@ python infra/provision_static_web_app.py --help
 
 The script creates resource `xxx-test-rg` and static web app`xxx-test`.
 It is idempotent and leaves an existing Static Web App unchanged.
+
+## Provision and deploy the backend API
+
+The `json-server` API (backed by `web/src/db.json`) can be deployed to an
+Azure App Service Linux web app:
+
+```sh
+.venv/bin/python infra/provision_backend.py
+```
+
+This creates (if missing) an App Service plan and web app, then zip-deploys
+`server/package.json` plus a copy of `web/src/db.json`. It prints the API
+URL on success, e.g. `https://frontierweek-hrapp-test-api.azurewebsites.net`.
+Use that as `VITE_API_URL` when building/deploying the frontend.
+
+It is idempotent for the App Service resources; each run re-deploys the
+latest `db.json` content.

@@ -10,6 +10,9 @@ lerna-debug.log*
 node_modules
 .venv
 infra/.env
+web/.env
+__pycache__
+*.pyc
 dist
 dist-ssr
 test-results

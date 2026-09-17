@@ -80,12 +80,14 @@ def main() -> None:
                 location=args.location,
                 sku=SkuDescription(name=args.sku, tier=args.sku),
                 tags={"application": "hrApp", "environment": "test"},
+                # Forces a non-empty "properties" object; the API rejects a body without one.
+                staging_environment_policy="Enabled",
             ),
         )
         static_site = poller.result()
         print(f"Created Static Web App '{args.name}'.")
 
-    print(f"URL: https://{static_site.default_host_name}")
+    print(f"URL: https://{static_site.default_hostname}")
 
 
 if __name__ == "__main__":

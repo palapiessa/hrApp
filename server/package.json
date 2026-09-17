@@ -1,0 +1,14 @@
+{
+  "name": "hr-app-server",
+  "private": true,
+  "version": "1.0.0",
+  "engines": {
+    "node": "20.x"
+  },
+  "scripts": {
+    "start": "json-server --watch db.json --host 0.0.0.0 --port $PORT"
+  },
+  "dependencies": {
+    "json-server": "^1.0.0-beta.3"
+  }
+}
