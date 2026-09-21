@@ -43,7 +43,7 @@ Optional arguments and their environment variable equivalents:
 python infra/provision_static_web_app.py --help
 ```
 
-The script creates resource `xxx-test-rg` and static web app`xxx-test`.
+The script creates resource `frontierweek-hrapp-test-rg` and static web app`frontierweek-hrapp-test`.
 It is idempotent and leaves an existing Static Web App unchanged.
 
 ## Provision and deploy the backend API
