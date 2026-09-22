@@ -15,6 +15,23 @@ jobs:
         run: |
           pip install openai
 
+      - name: Check environment variables
+        env:
+            OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+            FOUNDRY_API_KEY: ${{ secrets.FOUNDRY_API_KEY }}
+        run: |
+            if [ -n "$OPENAI_API_KEY" ]; then
+                echo "OPENAI_API_KEY exists"
+            else
+                echo "OPENAI_API_KEY missing"
+            fi
+
+            if [ -n "$FOUNDRY_API_KEY" ]; then
+                echo "FOUNDRY_API_KEY exists"
+            else
+                echo "FOUNDRY_API_KEY missing"
+            fi
+
       - name: Call Foundry Model
         env:
           FOUNDRY_ENDPOINT: ${{ secrets.FOUNDRY_ENDPOINT }}
