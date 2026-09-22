@@ -1,0 +1,39 @@
+name: Test Foundry Connection
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-model:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install OpenAI SDK
+        run: |
+          pip install openai
+
+      - name: Call Foundry Model
+        env:
+          FOUNDRY_ENDPOINT: ${{ secrets.FOUNDRY_ENDPOINT }}
+          FOUNDRY_API_KEY: ${{ secrets.FOUNDRY_API_KEY }}
+          FOUNDRY_MODEL_DEPLOYMENT: ${{ secrets.FOUNDRY_MODEL_DEPLOYMENT }}
+        run: |
+          python <<EOF
+          import os
+          from openai import OpenAI
+
+          client = OpenAI(
+              api_key=os.environ["FOUNDRY_API_KEY"],
+              base_url=f"{os.environ['FOUNDRY_ENDPOINT']}/openai/v1"
+          )
+
+          response = client.responses.create(
+              model=os.environ["FOUNDRY_MODEL_DEPLOYMENT"],
+              input="Reply only with: Foundry connection successful"
+          )
+
+          print(response.output_text)
+          EOF
