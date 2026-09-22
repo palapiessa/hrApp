@@ -3,6 +3,10 @@
     {
       "name": "Web App",
       "path": "web"
+    },
+    {
+      "name": "Tests",
+      "path": "tests"
     }
   ],
   "settings": {
