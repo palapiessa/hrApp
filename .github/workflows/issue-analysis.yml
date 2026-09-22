@@ -1,0 +1,77 @@
+name: Developer Agent - Issue Analysis
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  analyze-issue:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install OpenAI SDK
+        run: pip install openai
+
+      - name: Analyze issue with Azure AI Foundry
+        env:
+          FOUNDRY_ENDPOINT: ${{ secrets.FOUNDRY_ENDPOINT }}
+          FOUNDRY_API_KEY: ${{ secrets.FOUNDRY_API_KEY }}
+          FOUNDRY_MODEL_DEPLOYMENT: ${{ secrets.FOUNDRY_MODEL_DEPLOYMENT }}
+
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+
+        run: |
+          python <<'EOF'
+          import os
+          from openai import OpenAI
+
+          client = OpenAI(
+              api_key=os.environ["FOUNDRY_API_KEY"],
+              base_url=os.environ["FOUNDRY_ENDPOINT"]
+          )
+
+          prompt = f"""
+          You are the Developer Agent of a software development team.
+
+          Analyze the GitHub issue and provide:
+
+          1. Summary
+          2. Proposed implementation approach
+          3. Affected files (best guess)
+          4. Suggested tests
+          5. Risks or assumptions
+
+          ISSUE TITLE:
+          {os.environ['ISSUE_TITLE']}
+
+          ISSUE DESCRIPTION:
+          {os.environ['ISSUE_BODY']}
+          """
+
+          response = client.responses.create(
+              model=os.environ["FOUNDRY_MODEL_DEPLOYMENT"],
+              input=prompt
+          )
+
+          analysis = response.output_text
+
+          with open("analysis.md", "w") as f:
+              f.write("## 🤖 Developer Agent Analysis\n\n")
+              f.write(analysis)
+          EOF
+
+      - name: Post analysis as issue comment
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh issue comment \
+            ${{ github.event.issue.number }} \
+            --body-file analysis.md
