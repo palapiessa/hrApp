@@ -46,7 +46,7 @@ jobs:
 
           client = OpenAI(
               api_key=os.environ["FOUNDRY_API_KEY"],
-              base_url=fos.environ['FOUNDRY_ENDPOINT']
+              base_url=os.environ['FOUNDRY_ENDPOINT']
           )
       
           response = client.responses.create(
