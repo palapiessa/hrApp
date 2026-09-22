@@ -7,9 +7,11 @@ The project contains
 - Backend data: `db.json`
 - Backend dependency: `json-server`
 
+- `cd web`
 - install dependencies with: `npm install` 
 - Start script: `npm run server`, serving on `http://localhost:3001`
-- Frontend API configuration: `config.js`, currently pointing to the deployed Render API at `https://hrapp-bec7.onrender.com`
+- Frontend API configuration: `config.js`, currently pointing to the deployed Render API at `http://localhost:3001`
+- the default URL can be updated by setting an env variable for `API_URL`
 
 The backend is provided by JSON Server rather than custom Express or Node.js code.
 
