@@ -1,11 +1,19 @@
 name: Developer Agent - Issue Analysis
 
 on:
-  issues:
-    types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue_title:
+        description: "Issue title"
+        required: true
+        type: string
+
+      issue_description:
+        description: "Issue description"
+        required: true
+        type: string
 
 permissions:
-  issues: write
   contents: read
 
 jobs:
@@ -13,7 +21,7 @@ jobs:
     runs-on: ubuntu-latest
 
     environment: test
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,19 +29,32 @@ jobs:
       - name: Install OpenAI SDK
         run: pip install openai
 
-      - name: Analyze issue with Azure AI Foundry
+      - name: Verify Foundry secrets
+        env:
+          FOUNDRY_ENDPOINT: ${{ secrets.FOUNDRY_ENDPOINT }}
+          FOUNDRY_API_KEY: ${{ secrets.FOUNDRY_API_KEY }}
+          FOUNDRY_MODEL_DEPLOYMENT: ${{ secrets.FOUNDRY_MODEL_DEPLOYMENT }}
+        run: |
+          [ -n "$FOUNDRY_API_KEY" ] && echo "FOUNDRY_API_KEY found" || echo "FOUNDRY_API_KEY missing"
+          [ -n "$FOUNDRY_ENDPOINT" ] && echo "FOUNDRY_ENDPOINT found" || echo "FOUNDRY_ENDPOINT missing"
+          [ -n "$FOUNDRY_MODEL_DEPLOYMENT" ] && echo "FOUNDRY_MODEL_DEPLOYMENT found" || echo "FOUNDRY_MODEL_DEPLOYMENT missing"
+
+      - name: Analyze task with Azure AI Foundry
         env:
           FOUNDRY_ENDPOINT: ${{ secrets.FOUNDRY_ENDPOINT }}
           FOUNDRY_API_KEY: ${{ secrets.FOUNDRY_API_KEY }}
           FOUNDRY_MODEL_DEPLOYMENT: ${{ secrets.FOUNDRY_MODEL_DEPLOYMENT }}
 
-          ISSUE_TITLE: ${{ github.event.issue.title }}
-          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_TITLE: ${{ github.event.inputs.issue_title }}
+          ISSUE_BODY: ${{ github.event.inputs.issue_description }}
 
         run: |
           python <<'EOF'
           import os
           from openai import OpenAI
+
+          print("Endpoint:", os.environ["FOUNDRY_ENDPOINT"])
+          print("Deployment:", os.environ["FOUNDRY_MODEL_DEPLOYMENT"])
 
           client = OpenAI(
               api_key=os.environ["FOUNDRY_API_KEY"],
@@ -43,7 +64,7 @@ jobs:
           prompt = f"""
           You are the Developer Agent of a software development team.
 
-          Analyze the GitHub issue and provide:
+          Analyze the following task and provide:
 
           1. Summary
           2. Proposed implementation approach
@@ -51,29 +72,6 @@ jobs:
           4. Suggested tests
           5. Risks or assumptions
 
-          ISSUE TITLE:
+          TASK TITLE:
           {os.environ['ISSUE_TITLE']}
 
-          ISSUE DESCRIPTION:
-          {os.environ['ISSUE_BODY']}
-          """
-
-          response = client.responses.create(
-              model=os.environ["FOUNDRY_MODEL_DEPLOYMENT"],
-              input=prompt
-          )
-
-          analysis = response.output_text
-
-          with open("analysis.md", "w") as f:
-              f.write("## 🤖 Developer Agent Analysis\n\n")
-              f.write(analysis)
-          EOF
-
-      - name: Post analysis as issue comment
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh issue comment \
-            ${{ github.event.issue.number }} \
-            --body-file analysis.md
