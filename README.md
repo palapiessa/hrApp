@@ -1,64 +1,150 @@
-# HR App Workspace
+<h1 align="center">🌟 HR Management System (React + JSON Server API) 🌟</h1>
 
-This repository contains two projects:
+<p align="center">
+A modern, user-friendly HR management web application built with <strong>React</strong>, <strong>React Router</strong>, <strong>Axios</strong>, and a <strong>JSON Server backend</strong>.
+<br/>
+This system enables teams to manage employees, track work experience, and automate HR reminders.
+</p>
 
-- `web` - the React and Vite HR application
-- `tests` - Playwright end-to-end tests
+<p align="center">
+  <a href="https://hrapp-1-68tb.onrender.com"><strong>🌐 Live Demo</strong></a> •
+  <a href="https://hrapp-bec7.onrender.com/employees"><strong>📡 Backend API</strong></a>
+</p>
 
-Open `hrApp.code-workspace` in VS Code to work with both projects.
+<p align="center">
+  <img src="https://img.shields.io/badge/React-18-blue" />
+  <img src="https://img.shields.io/badge/JSON--Server-API-green" />
+  <img src="https://img.shields.io/badge/Status-Live-success" />
+  <img src="https://img.shields.io/badge/Maintainer-Bita%20Yeganeh-pink" />
+</p>
 
-## Run the app
+---
 
-```sh
-npm --prefix web install
-npm --prefix web run dev
-```
+## ⭐ Features
 
-## Run the tests
+### 👥 Employee Management
 
-```sh
-npm --prefix tests install
-npx --prefix tests playwright install chromium
-npm --prefix tests test
-```
+- 📄 View all employees
+- ➕ Add new employees
+- ✏️ Edit department, salary, phone, skills, and more
+- ❌ Delete employees
+- ⚡ Instant UI update on CRUD actions
 
-## Provision Azure Static Web Apps
+---
 
-The provisioning script uses `DefaultAzureCredential`. For local use, sign in
-with Azure CLI and provide the target subscription:
+### 📅 Work Experience Automation
 
-```sh
-python3 -m venv .venv
-. .venv/bin/activate
-pip install -r infra/requirements.txt
-az login --tenant <your tenant ID>
-- login with Edge
-- set subscription ID to .env
-.venv/bin/python infra/provision_static_web_app.py
-```
+Automatically calculates work experience based on `hireDate`:
 
-Optional arguments and their environment variable equivalents:
+| Condition                             | HR Reminder                         |
+| ------------------------------------- | ----------------------------------- |
+| Work anniversary (5, 10, 15, … years) | 🎉 **Schedule recognition meeting** |
+| Less than 6 months                    | 🔔 **Schedule probation review**    |
 
-```sh
-python infra/provision_static_web_app.py --help
-```
+---
 
-The script creates resource `xxx-test-rg` and static web app`xxx-test`.
-It is idempotent and leaves an existing Static Web App unchanged.
+### 🎨 Clean & Modular UI
 
-## Provision and deploy the backend API
+- 🧩 Employee cards with emoji avatars
+- 🔄 Edit & display modes
+- ℹ️ About page
+- 🚫 404 error page
+- 📌 Consistent layout with header + footer
 
-The `json-server` API (backed by `web/src/db.json`) can be deployed to an
-Azure App Service Linux web app:
+---
 
-```sh
-.venv/bin/python infra/provision_backend.py
-```
+### 🧩 Reusable Architecture
 
-This creates (if missing) an App Service plan and web app, then zip-deploys
-`server/package.json` plus a copy of `web/src/db.json`. It prints the API
-URL on success, e.g. `https://frontierweek-hrapp-test-api.azurewebsites.net`.
-Use that as `VITE_API_URL` when building/deploying the frontend.
+- ⚙ Custom `useAxios()` hook
+- 🔧 Utilities:
+  - `calculateWorkExperience.js`
+  - `animalEmoji.js`
+- 🗂 Organized component structure & CSS modules
 
-It is idempotent for the App Service resources; each run re-deploys the
-latest `db.json` content.
+---
+
+## 📁 Project Structure
+
+src/
+├── App.jsx
+├── Layout.jsx
+├── config.js
+├── main.jsx
+├── components/
+│ ├── Header.jsx
+│ ├── Footer.jsx
+│ ├── PersonList.jsx
+│ ├── Employee.jsx
+│ ├── PersonCard.jsx
+├── pages/
+│ ├── AddEmployee.jsx
+│ ├── About.jsx
+│ └── ErrorPage.jsx
+├── hooks/
+│ └── useAxios.js
+├── utils/
+│ ├── calculateWorkExperience.js
+│ └── animalEmoji.js
+└── styles/
+
+---
+
+🐾 Emoji Generator:
+
+Converts animal names like:
+"Owl", "Snake", "Fox" into cute emoji avatars.
+
+---
+
+🎯 Highlights:
+🧍 PersonCard Component
+🔄 Edit & display modes
+📝 PUT & DELETE support
+
+---
+
+📌 Displays:
+
+- Name
+- Phone
+- Salary
+- Department
+- Skills
+- Work experience
+- Automated reminders
+  ♻ Auto-refresh after backend updates
+
+---
+
+➕ AddEmployee Page:
+
+- Dynamic form based on fields[]
+- Fully controlled inputs
+- Automatically converts comma-separated
+- skills → array
+- Submits through onAddEmployee()
+
+---
+
+🌐 Deployment:
+
+The application is fully deployed on Render.
+
+Service Link:
+
+🎨 Frontend:
+https://hrapp-1-68tb.onrender.com
+
+🗄 Backend API:
+https://hrapp-bec7.onrender.com/employees
+
+---
+
+👤 Author
+Bita Yeganeh
+🔗 GitHub: https://github.com/BitaYeganeh
+
+📜 License
+
+This project is open-source.
+Feel free to modify, improve, and share it! 💙
