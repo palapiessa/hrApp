@@ -46,12 +46,9 @@ jobs:
 
           client = OpenAI(
               api_key=os.environ["FOUNDRY_API_KEY"],
-              base_url=f"{os.environ['FOUNDRY_ENDPOINT']}/openai/v1"
+              base_url=fos.environ['FOUNDRY_ENDPOINT']
           )
-          
-          print("Endpoint:", os.environ["FOUNDRY_ENDPOINT"])
-          print("Deployment:", os.environ["FOUNDRY_MODEL_DEPLOYMENT"])
-
+      
           response = client.responses.create(
               model=os.environ["FOUNDRY_MODEL_DEPLOYMENT"],
               input="Reply only with: Foundry connection successful"
