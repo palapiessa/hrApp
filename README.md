@@ -148,3 +148,10 @@ Bita Yeganeh
 
 This project is open-source.
 Feel free to modify, improve, and share it! 💙
+---
+
+The script creates resource `frontierweek-hrapp-test-rg` and static web app `frontierweek-hrapp-test`.
+It is idempotent and leaves an existing Static Web App unchanged.
+
+It is idempotent for the App Service resources; each run re-deploys the
+latest `db.json` content.
