@@ -1,0 +1,100 @@
+name: Test Automation Agent - Review Implementation Proposal
+
+on:
+  pull_request:
+    types:
+      - opened
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review-implementation-proposal:
+    runs-on: ubuntu-latest
+
+    environment: test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install OpenAI SDK
+        run: pip install openai
+
+      - name: Read implementation plan
+        run: |
+          PLAN_FILE=$(find docs -name "*implementation-plan.md" | head -n 1)
+
+          echo "PLAN_FILE=$PLAN_FILE" >> $GITHUB_ENV
+
+          cat "$PLAN_FILE" > implementation_plan.md
+
+      - name: Analyze implementation plan
+        env:
+          FOUNDRY_ENDPOINT: ${{ secrets.FOUNDRY_ENDPOINT }}
+          FOUNDRY_API_KEY: ${{ secrets.FOUNDRY_API_KEY }}
+          FOUNDRY_MODEL_DEPLOYMENT: ${{ secrets.FOUNDRY_MODEL_DEPLOYMENT }}
+
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+
+        run: |
+          python <<'EOF'
+          import os
+          from openai import OpenAI
+
+          client = OpenAI(
+              api_key=os.environ["FOUNDRY_API_KEY"],
+              base_url=os.environ["FOUNDRY_ENDPOINT"]
+          )
+
+          with open("implementation_plan.md", "r") as f:
+              implementation_plan = f.read()
+
+          prompt = f"""
+          You are a senior Test Automation Engineer.
+
+          Review this implementation proposal from a Developer Agent.
+
+          Your tasks:
+
+          1. Review the proposal.
+          2. Identify risks.
+          3. Create a test strategy.
+          4. Propose high-value test cases.
+          5. Suggest what should eventually be automated with Playwright.
+          6. Identify missing acceptance criteria.
+          7. Ask any questions that should be clarified before implementation.
+
+          Pull Request Title:
+          {os.environ['PR_TITLE']}
+
+          Pull Request Description:
+          {os.environ['PR_BODY']}
+
+          Implementation Proposal:
+          {implementation_plan}
+          """
+
+          response = client.responses.create(
+              model=os.environ["FOUNDRY_MODEL_DEPLOYMENT"],
+              input=prompt
+          )
+
+          review = response.output_text
+
+          with open("test-review.md", "w") as f:
+              f.write("## 🤖 Test Automation Agent Review\n\n")
+              f.write(review)
+
+          print(review)
+          EOF
+
+      - name: Comment review on PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment \
+            ${{ github.event.pull_request.number }} \
+            --body-file test-review.md
