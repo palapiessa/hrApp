@@ -1,0 +1,70 @@
+High-Level Architecture
+
+┌─────────────────────────┐
+│ Human                   │
+│                         │
+│ Creates Issue           │
+│ Reviews PR              │
+│ Merges PR               │
+└─────────────┬───────────┘
+              │
+              ▼
+┌─────────────────────────┐
+│ GitHub Repository       │
+│                         │
+│ Issues                  │
+│ Source Code             │
+│ Pull Requests           │
+└─────────────┬───────────┘
+              │ Events
+              ▼
+┌─────────────────────────┐
+│ GitHub Actions          │
+│                         │
+│ Event Dispatcher        │
+└──────┬───────────┬──────┘
+       │           │
+       ▼           ▼
+
+┌─────────────────┐   ┌─────────────────┐
+│ Developer Agent │   │ Test Agent      │
+│ Azure AI        │   │ Azure AI        │
+│ Foundry Agent   │   │ Foundry Agent   │
+└────────┬────────┘   └────────┬────────┘
+         │                     │
+         ▼                     ▼
+
+┌─────────────────────────────────────┐
+│ Temporary Local Workspace           │
+│ (MacOS Docker Container)            │
+│                                     │
+│ git clone                           │
+│ modify code                         │
+│ generate tests                      │
+│ commit                              │
+│ push                                │
+└─────────────────────────────────────┘
+
+Local MacOS execution environment
+
+MacBook
+  │
+  ├─ Docker Desktop
+  │
+  ├─ GitHub CLI
+  │
+  ├─ Git
+  │
+  └─ Python Runtime
+
+  GitHub Repo
+      │
+      ▼
+GitHub Actions
+(self-hosted Mac runner)
+      │
+      ▼
+Docker Workspace
+      │
+      ▼
+Azure AI Foundry Agent

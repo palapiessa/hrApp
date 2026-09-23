@@ -75,3 +75,20 @@ jobs:
           TASK TITLE:
           {os.environ['ISSUE_TITLE']}
 
+          TASK DESCRIPTION:
+          {os.environ['ISSUE_BODY']}
+          """
+
+          response = client.responses.create(
+            model=os.environ["FOUNDRY_MODEL_DEPLOYMENT"],
+            input=prompt
+          )
+
+          analysis = response.output_text
+
+          print("\n=== AI ANALYSIS ===\n")
+          print(analysis)
+
+          with open("analysis.md", "w") as f:
+            f.write("# Developer Agent Analysis\n\n")
+            f.write(analysis)
