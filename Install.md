@@ -1,22 +1,74 @@
 # Local installation instructions
 
-## Backend server
+## Prerequisites
 
-The project contains 
+- Node.js and npm
 
-- Backend data: `db.json`
-- Backend dependency: `json-server`
+## Install dependencies
 
-- `cd web`
-- install dependencies with: `npm install` 
-- Start script: `npm run server`, serving on `http://localhost:3001`
-- Frontend API configuration: `config.js`, currently pointing to the deployed Render API at `http://localhost:3001`
-- the default URL can be updated by setting an env variable for `API_URL`
+From the repository root, install the web application dependencies:
 
-The backend is provided by JSON Server rather than custom Express or Node.js code.
+```sh
+cd web
+npm install
+```
 
-## Frontend
-To use the local JSON Server, point config.js to:  `export const API_URL = 'http://localhost:3001';`
-Run in separate terminal: `npm run dev`
+## Start the local backend
 
-Vite will start the React frontend, usually at: `http://localhost:5173`
+The backend is a JSON Server API. It uses `web/src/db.json` as its local data store.
+
+In one terminal, from the `web` directory, run:
+
+```sh
+npm run server
+```
+
+The API is available at:
+
+```text
+http://localhost:3001
+```
+
+The employee collection is available at:
+
+```text
+http://localhost:3001/employees
+```
+
+## Start the frontend
+
+In a second terminal, from the `web` directory, run:
+
+```sh
+npm run dev
+```
+
+Vite starts the React application at:
+
+```text
+http://localhost:5173
+```
+
+The frontend uses `http://localhost:3001` by default, as configured in `web/src/config.js`.
+To use another API without editing the source file, set `VITE_API_URL` when starting Vite:
+
+```sh
+VITE_API_URL=https://your-api.example.com npm run dev
+```
+
+## Run Playwright tests
+
+From the repository root, install the test dependencies:
+
+```sh
+npm --prefix tests install
+npx --prefix tests playwright install chromium
+```
+
+Run the tests:
+
+```sh
+npm --prefix tests test
+```
+
+The Playwright configuration starts the frontend automatically at `http://localhost:5173`.
