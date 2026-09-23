@@ -20,6 +20,31 @@ This system enables teams to manage employees, track work experience, and automa
 
 ---
 
+## 🚀 Agent-a-Thon Project
+
+This repository is part of the **Agent-a-Thon** project, a workflow-focused build designed to showcase how an AI-assisted development process can be used to update and maintain a real application.
+
+The project combines:
+- a working product codebase,
+- issue-driven documentation updates,
+- and a structured agent workflow for making changes safely and consistently.
+
+---
+
+## 🤖 Developer Agent Workflow
+
+The **Developer Agent** follows a simple documentation-first workflow:
+
+1. **Review the issue** to understand the requested change.
+2. **Select the relevant file** for the update.
+3. **Make the smallest necessary change** while preserving unrelated content.
+4. **Verify the update** matches the issue requirements.
+5. **Return the completed file content** ready to commit.
+
+For this repository, that usually means updating the main README to keep the project overview current and aligned with the issue being worked on.
+
+---
+
 ## ⭐ Features
 
 ### 👥 Employee Management

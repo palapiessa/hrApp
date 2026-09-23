@@ -2,6 +2,16 @@
 
 This repository contains two agents: a Developer Agent and a Test Automation Agent. The purpose is to assist a human developer or product owner by automating implementation and testing activities while keeping decision-making and approvals under human control.
 
+## Agent-a-Thon Project
+
+Agent-a-Thon is a multi-agent GitHub workflow project designed to demonstrate how human-directed agents can help turn issues into implemented code and verified changes. The repository uses GitHub Issues, GitHub Actions, and agent service accounts to coordinate work while keeping the human in control of requirements, review, and merge decisions.
+
+The project focuses on:
+- Converting GitHub issues into implementation tasks
+- Using a Developer Agent to make code changes
+- Using a Test Automation Agent to validate changes
+- Keeping all significant decisions with the human reviewer
+
 Changes follow the workflow:
 
 Human
@@ -179,6 +189,7 @@ Create PR Comments
 Update Files
 
 ## Filesystem MCP
+
 Provides:
 Read Repository Files
 Write Repository Files
