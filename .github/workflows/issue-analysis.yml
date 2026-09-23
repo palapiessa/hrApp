@@ -1,20 +1,12 @@
 name: Developer Agent - Issue Analysis
 
 on:
-  workflow_dispatch:
-    inputs:
-      issue_title:
-        description: "Issue title"
-        required: true
-        type: string
-
-      issue_description:
-        description: "Issue description"
-        required: true
-        type: string
+  issues:
+    types: [opened]
 
 permissions:
   contents: read
+  issues: write
 
 jobs:
   analyze-issue:
@@ -45,8 +37,8 @@ jobs:
           FOUNDRY_API_KEY: ${{ secrets.FOUNDRY_API_KEY }}
           FOUNDRY_MODEL_DEPLOYMENT: ${{ secrets.FOUNDRY_MODEL_DEPLOYMENT }}
 
-          ISSUE_TITLE: ${{ github.event.inputs.issue_title }}
-          ISSUE_BODY: ${{ github.event.inputs.issue_description }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
 
         run: |
           python <<'EOF'
@@ -92,3 +84,19 @@ jobs:
           with open("analysis.md", "w") as f:
             f.write("# Developer Agent Analysis\n\n")
             f.write(analysis)
+        
+          EOF
+
+      - name: Verify gh CLI
+        run: |
+            gh --version
+
+      - name: Post analysis as issue comment
+        env:
+            GH_TOKEN: ${{ github.token }}
+        run: |
+            echo "Posting analysis to issue ${{ github.event.issue.number }}"
+            
+            gh issue comment \
+            ${{ github.event.issue.number }} \
+            --body-file analysis.md
