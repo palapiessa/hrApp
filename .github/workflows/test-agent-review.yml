@@ -100,7 +100,11 @@ jobs:
           git config user.name "PetriTestAgent"
           git config user.email "petrialapiessa-test-2026@hotmail.com"
 
-          git checkout ${{ github.head_ref }}
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+
+          git fetch origin
+
+          git checkout "$BRANCH"
 
           git add generated-tests/
 
