@@ -1,0 +1,126 @@
+name: Test Automation Agent
+
+on:
+  pull_request:
+    types:
+      - opened
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  test-agent:
+    runs-on: ubuntu-latest
+
+    environment: test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install OpenAI SDK
+        run: pip install openai
+
+      - name: Read PR content
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          echo "$PR_TITLE" > pr_title.txt
+          echo "$PR_BODY" > pr_body.txt
+
+      - name: Generate Playwright tests
+        env:
+          FOUNDRY_ENDPOINT: ${{ secrets.FOUNDRY_ENDPOINT }}
+          FOUNDRY_API_KEY: ${{ secrets.FOUNDRY_API_KEY }}
+          FOUNDRY_MODEL_DEPLOYMENT: ${{ secrets.FOUNDRY_MODEL_DEPLOYMENT }}
+
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+
+        run: |
+          python <<'EOF'
+          import os
+          from openai import OpenAI
+
+          client = OpenAI(
+              api_key=os.environ["FOUNDRY_API_KEY"],
+              base_url=os.environ["FOUNDRY_ENDPOINT"]
+          )
+
+          prompt = f"""
+          You are a senior Test Automation Engineer.
+
+          Review the pull request.
+
+          Produce:
+
+          1. Test strategy
+          2. Test cases
+          3. Playwright TypeScript test
+
+          PULL REQUEST TITLE:
+          {os.environ["PR_TITLE"]}
+
+          PULL REQUEST DESCRIPTION:
+          {os.environ["PR_BODY"]}
+
+          Output a complete Playwright test file.
+          """
+
+          response = client.responses.create(
+              model=os.environ["FOUNDRY_MODEL_DEPLOYMENT"],
+              input=prompt
+          )
+
+          output = response.output_text
+
+          os.makedirs("generated-tests", exist_ok=True)
+
+          with open(
+              "generated-tests/generated-playwright.spec.ts",
+              "w"
+          ) as f:
+              f.write(output)
+
+          with open(
+              "generated-tests/test-review.md",
+              "w"
+          ) as f:
+              f.write("# Test Automation Agent Review\n\n")
+              f.write(output)
+
+          print(output)
+
+          EOF
+
+      - name: Commit generated tests
+        run: |
+          git config user.name "PetriTestAgent"
+          git config user.email "petrialapiessa-test-2026@hotmail.com"
+
+          git checkout ${{ github.head_ref }}
+
+          git add generated-tests/
+
+          git commit -m "Test Agent: generated Playwright tests" || echo "No changes"
+
+          git push origin HEAD
+
+      - name: Comment on PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment \
+            ${{ github.event.pull_request.number }} \
+            --body "
+          🤖 Test Automation Agent completed review.
+
+          Generated:
+          - Test strategy
+          - Test cases
+          - Playwright test proposal
+
+          See committed files in generated-tests/.
+          "
