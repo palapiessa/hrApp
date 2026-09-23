@@ -112,7 +112,7 @@ Converts animal names like:
 - Skills
 - Work experience
 - Automated reminders
-  ♻ Auto-refresh after backend updates
+- ♻ Auto-refresh after backend updates
 
 ---
 
@@ -120,8 +120,7 @@ Converts animal names like:
 
 - Dynamic form based on fields[]
 - Fully controlled inputs
-- Automatically converts comma-separated
-- skills → array
+- Automatically converts comma-separated skills → array
 - Submits through onAddEmployee()
 
 ---
@@ -148,10 +147,12 @@ Bita Yeganeh
 
 This project is open-source.
 Feel free to modify, improve, and share it! 💙
+
 ---
+
+🔧 Infrastructure Notes
 
 The script creates resource `frontierweek-hrapp-test-rg` and static web app `frontierweek-hrapp-test`.
 It is idempotent and leaves an existing Static Web App unchanged.
 
-It is idempotent for the App Service resources; each run re-deploys the
-latest `db.json` content.
+It is idempotent for the App Service resources; each run re-deploys the latest `db.json` content.
