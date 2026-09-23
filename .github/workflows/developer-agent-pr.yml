@@ -1,0 +1,137 @@
+name: Developer Agent - Create PR
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  developer-agent:
+    runs-on: ubuntu-latest
+
+    environment: test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install OpenAI SDK
+        run: pip install openai
+
+      - name: Generate implementation plan
+        env:
+          FOUNDRY_ENDPOINT: ${{ secrets.FOUNDRY_ENDPOINT }}
+          FOUNDRY_API_KEY: ${{ secrets.FOUNDRY_API_KEY }}
+          FOUNDRY_MODEL_DEPLOYMENT: ${{ secrets.FOUNDRY_MODEL_DEPLOYMENT }}
+
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+
+        run: |
+          python <<'EOF'
+          import os
+          from openai import OpenAI
+
+          client = OpenAI(
+              api_key=os.environ["FOUNDRY_API_KEY"],
+              base_url=os.environ["FOUNDRY_ENDPOINT"]
+          )
+
+          prompt = f"""
+          You are the Developer Agent.
+
+          Analyze the following GitHub issue.
+
+          Produce a markdown document containing:
+
+          - Summary
+          - Proposed implementation approach
+          - Affected files
+          - Suggested tests
+          - Risks and assumptions
+
+          ISSUE TITLE:
+          {os.environ['ISSUE_TITLE']}
+
+          ISSUE DESCRIPTION:
+          {os.environ['ISSUE_BODY']}
+          """
+
+          response = client.responses.create(
+              model=os.environ["FOUNDRY_MODEL_DEPLOYMENT"],
+              input=prompt
+          )
+
+          analysis = response.output_text
+
+          os.makedirs("docs", exist_ok=True)
+
+          filename = (
+              f"docs/issue-{os.environ['ISSUE_NUMBER']}"
+              f"-implementation-plan.md"
+          )
+
+          with open(filename, "w") as f:
+              f.write("# Developer Agent Implementation Plan\n\n")
+              f.write(f"## Issue #{os.environ['ISSUE_NUMBER']}\n\n")
+              f.write(analysis)
+
+          print("Created:", filename)
+          EOF
+
+      - name: Configure Git
+        run: |
+          git config user.name "PetriDevAgent"
+          git config user.email "petri.dev.agent@gmail.com"
+
+      - name: Create branch
+        env:
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          BRANCH="devagent/issue-${ISSUE_NUMBER}"
+
+          git checkout -b "$BRANCH"
+
+          git add docs/
+
+          git commit -m "Developer Agent: add implementation plan for issue #${ISSUE_NUMBER}"
+
+          git push origin "$BRANCH"
+
+      - name: Create Pull Request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          BRANCH="devagent/issue-${ISSUE_NUMBER}"
+
+          gh pr create \
+            --head "$BRANCH" \
+            --base main \
+            --title "Developer Agent: Issue #${ISSUE_NUMBER} Implementation Plan" \
+            --body "
+          Generated automatically by Developer Agent.
+
+          Source Issue:
+          #${ISSUE_NUMBER}
+
+          Contents:
+          - Requirement analysis
+          - Suggested implementation
+          - Test strategy
+          - Risks and assumptions
+          "
+
+      - name: Comment on issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          gh issue comment \
+            "$ISSUE_NUMBER" \
+            --body "🤖 Developer Agent created an implementation plan and opened a pull request."
