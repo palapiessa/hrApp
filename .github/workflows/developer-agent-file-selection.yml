@@ -119,13 +119,19 @@ jobs:
 
       - name: Comment selected files to issue
         env:
-          GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ github.event.issue.number }}
+            GH_TOKEN: ${{ github.token }}
+            ISSUE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          echo '```json' > issue-comment.md
-          cat selected-files.json >> issue-comment.md
-          echo '```' >> issue-comment.md
+            {
+            echo "<!-- developer-agent-file-selection -->"
+            echo "## Developer Agent File Selection"
+            echo
+            echo '```json'
+            cat selected-files.json
+            echo
+            echo '```'
+            } > issue-comment.md
 
-          gh issue comment \
+            gh issue comment \
             "$ISSUE_NUMBER" \
             --body-file issue-comment.md

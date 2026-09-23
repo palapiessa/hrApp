@@ -1,22 +1,20 @@
-name: Developer Agent - Modify Files
+name: Developer Agent - Modify Selected Files
 
 on:
   workflow_dispatch:
     inputs:
       issue_number:
-        description: "Issue number"
+        description: "Issue number containing the file-selection comment"
         required: true
-
-      file_path:
-        description: "File selected by planning agent"
-        required: true
+        type: string
 
 permissions:
   contents: write
+  issues: read
   pull-requests: write
 
 jobs:
-  modify-file:
+  modify-files:
     runs-on: ubuntu-latest
 
     environment: test
@@ -31,130 +29,314 @@ jobs:
         run: |
           pip install openai
 
-      - name: Validate file type
+      - name: Fetch issue and planner output
         env:
-          FILE_PATH: ${{ github.event.inputs.file_path }}
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
         run: |
+          gh issue view "$ISSUE_NUMBER" \
+            --json number,title,body \
+            > issue.json
 
-          if [[ ! "$FILE_PATH" =~ \.md$ ]]; then
-            echo "Only markdown files are allowed in v1."
-            exit 1
-          fi
+          gh api \
+            "repos/${{ github.repository }}/issues/${ISSUE_NUMBER}/comments?per_page=100" \
+            > issue-comments.json
 
-      - name: Read target file
-        env:
-          FILE_PATH: ${{ github.event.inputs.file_path }}
+      - name: Extract and validate planner JSON
         run: |
-          cat "$FILE_PATH" > target_file.txt
+          python <<'EOF'
+          import json
+          import re
+          from pathlib import Path
 
-      - name: Modify file with Developer Agent
+          marker = "<!-- developer-agent-file-selection -->"
+
+          comments = json.loads(
+              Path("issue-comments.json").read_text(encoding="utf-8")
+          )
+
+          planner_comments = [
+              comment
+              for comment in comments
+              if marker in (comment.get("body") or "")
+          ]
+
+          if not planner_comments:
+              raise RuntimeError(
+                  "No marked Developer Agent file-selection comment was found. "
+                  "Run the file-selection workflow first and ensure its comment "
+                  "contains the marker."
+              )
+
+          planner_comments.sort(
+              key=lambda comment: comment.get("created_at", "")
+          )
+          comment_body = planner_comments[-1]["body"]
+
+          match = re.search(
+              r"```json\s*(\{.*?\})\s*```",
+              comment_body,
+              flags=re.DOTALL,
+          )
+
+          if not match:
+              raise RuntimeError(
+                  "The planner comment does not contain a JSON code block."
+              )
+
+          try:
+              plan = json.loads(match.group(1))
+          except json.JSONDecodeError as error:
+              raise RuntimeError(
+                  f"The selected-files JSON is invalid: {error}"
+              ) from error
+
+          selected_files = plan.get("files_to_modify")
+
+          if not isinstance(selected_files, list) or not selected_files:
+              raise RuntimeError(
+                  "The planner JSON contains no files_to_modify entries."
+              )
+
+          repository_root = Path.cwd().resolve()
+          validated_files = []
+
+          for item in selected_files:
+              if not isinstance(item, dict):
+                  raise RuntimeError(
+                      "Each files_to_modify entry must be an object."
+                  )
+
+              relative_path = str(item.get("path", "")).strip()
+              reason = str(item.get("reason", "")).strip()
+
+              if not relative_path:
+                  raise RuntimeError(
+                      "A selected file entry has an empty path."
+                  )
+
+              candidate = (repository_root / relative_path).resolve()
+
+              try:
+                  candidate.relative_to(repository_root)
+              except ValueError as error:
+                  raise RuntimeError(
+                      f"Unsafe path outside repository: {relative_path}"
+                  ) from error
+
+              if not candidate.is_file():
+                  raise RuntimeError(
+                      f"Selected file does not exist: {relative_path}"
+                  )
+
+              validated_files.append(
+                  {
+                      "path": relative_path,
+                      "reason": reason,
+                  }
+              )
+
+          validated_plan = {
+              "summary": str(plan.get("summary", "")).strip(),
+              "files_to_modify": validated_files,
+          }
+
+          Path("selected-files.json").write_text(
+              json.dumps(validated_plan, indent=2),
+              encoding="utf-8",
+          )
+
+          print("Validated planner output:")
+          print(json.dumps(validated_plan, indent=2))
+          EOF
+
+      - name: Modify selected files with Developer Agent
         env:
           FOUNDRY_ENDPOINT: ${{ secrets.FOUNDRY_ENDPOINT }}
           FOUNDRY_API_KEY: ${{ secrets.FOUNDRY_API_KEY }}
           FOUNDRY_MODEL_DEPLOYMENT: ${{ secrets.FOUNDRY_MODEL_DEPLOYMENT }}
-
-          FILE_PATH: ${{ github.event.inputs.file_path }}
-          ISSUE_NUMBER: ${{ github.event.inputs.issue_number }}
-
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
         run: |
           python <<'EOF'
+          import json
           import os
+          from pathlib import Path
+
           from openai import OpenAI
+
+          issue = json.loads(
+              Path("issue.json").read_text(encoding="utf-8")
+          )
+
+          plan = json.loads(
+              Path("selected-files.json").read_text(encoding="utf-8")
+          )
+
+          issue_title = issue["title"]
+          issue_body = issue.get("body") or ""
 
           client = OpenAI(
               api_key=os.environ["FOUNDRY_API_KEY"],
-              base_url=os.environ["FOUNDRY_ENDPOINT"]
+              base_url=os.environ["FOUNDRY_ENDPOINT"],
           )
 
-          with open(
-              "target_file.txt",
-              "r",
-              encoding="utf-8"
-          ) as f:
-              file_content = f.read()
+          changed_files = []
 
-          prompt = f"""
-          You are the Developer Agent.
+          for selected_file in plan["files_to_modify"]:
+              file_path = selected_file["path"]
+              selection_reason = selected_file.get("reason", "")
 
-          The selected repository file is:
+              path = Path(file_path)
+              current_content = path.read_text(encoding="utf-8")
 
-          {os.environ['FILE_PATH']}
+              prompt = f"""
+          You are the Developer Agent working in a GitHub repository.
 
-          Current file content:
+          Implement the GitHub issue by updating the selected file.
 
-          -------------------
-          {file_content}
-          -------------------
+          ISSUE NUMBER:
+          {os.environ['ISSUE_NUMBER']}
 
-          Update the file according to Issue #{os.environ['ISSUE_NUMBER']}.
+          ISSUE TITLE:
+          {issue_title}
 
-          Return ONLY the complete updated file.
+          ISSUE DESCRIPTION:
+          {issue_body}
 
-          Do not include explanations.
-          Do not use markdown code fences.
+          PLANNER SUMMARY:
+          {plan.get('summary', '')}
+
+          SELECTED FILE:
+          {file_path}
+
+          REASON THIS FILE WAS SELECTED:
+          {selection_reason}
+
+          CURRENT FILE CONTENT:
+          <current-file>
+          {current_content}
+          </current-file>
+
+          Requirements:
+
+          - Implement the actual issue requirement.
+          - Preserve existing content unrelated to the requested change.
+          - Do not make formatting-only changes unless explicitly requested.
+          - Do not invent requirements that are not present in the issue.
+          - Return the complete updated file.
+          - Return only the file content.
+          - Do not include explanations.
+          - Do not use Markdown code fences around the response.
           """
 
-          response = client.responses.create(
-              model=os.environ["FOUNDRY_MODEL_DEPLOYMENT"],
-              input=prompt
+              response = client.responses.create(
+                  model=os.environ["FOUNDRY_MODEL_DEPLOYMENT"],
+                  input=prompt,
+              )
+
+              updated_content = response.output_text.strip()
+
+              if not updated_content:
+                  raise RuntimeError(
+                      f"Developer Agent returned empty content for {file_path}."
+                  )
+
+              if updated_content.startswith("```"):
+                  raise RuntimeError(
+                      f"Developer Agent returned a code fence for {file_path}."
+                  )
+
+              if updated_content == current_content.strip():
+                  raise RuntimeError(
+                      f"Developer Agent made no change to {file_path}."
+                  )
+
+              path.write_text(
+                  updated_content + "\n",
+                  encoding="utf-8",
+              )
+
+              changed_files.append(file_path)
+              print(f"Updated: {file_path}")
+
+          Path("changed-files.txt").write_text(
+              "\n".join(changed_files) + "\n",
+              encoding="utf-8",
           )
-
-          updated_content = response.output_text
-
-          with open(
-              os.environ["FILE_PATH"],
-              "w",
-              encoding="utf-8"
-          ) as f:
-              f.write(updated_content)
-
-          print("Updated:", os.environ["FILE_PATH"])
-
           EOF
+
+      - name: Verify generated changes
+        run: |
+          if git diff --quiet; then
+            echo "Developer Agent produced no repository changes."
+            exit 1
+          fi
+
+          git diff --check
+
+          echo "Changed files:"
+          cat changed-files.txt
+
+          echo "Generated diff:"
+          git diff
 
       - name: Configure Git
         run: |
           git config user.name "PetriDevAgent"
           git config user.email "petri.dev.agent@gmail.com"
 
-      - name: Create branch
+      - name: Create branch and commit changes
         env:
-          ISSUE_NUMBER: ${{ github.event.inputs.issue_number }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
         run: |
           BRANCH="devagent/issue-${ISSUE_NUMBER}-implementation"
 
+          if git ls-remote --exit-code --heads origin "$BRANCH"; then
+            BRANCH="${BRANCH}-${GITHUB_RUN_ID}"
+          fi
+
           git checkout -b "$BRANCH"
 
-          echo "BRANCH=$BRANCH" >> $GITHUB_ENV
+          while IFS= read -r FILE_PATH; do
+            if [ -n "$FILE_PATH" ]; then
+              git add -- "$FILE_PATH"
+            fi
+          done < changed-files.txt
 
-      - name: Commit changes
-        env:
-          FILE_PATH: ${{ github.event.inputs.file_path }}
-        run: |
-          git add "$FILE_PATH"
+          if git diff --cached --quiet; then
+            echo "No selected changes were staged."
+            exit 1
+          fi
 
           git commit \
-            -m "Developer Agent: implement issue update"
+            -m "Developer Agent: implement issue #${ISSUE_NUMBER}"
 
-      - name: Push branch
-        run: |
           git push origin "$BRANCH"
+
+          echo "BRANCH=$BRANCH" >> "$GITHUB_ENV"
 
       - name: Create Pull Request
         env:
           GH_TOKEN: ${{ github.token }}
-          ISSUE_NUMBER: ${{ github.event.inputs.issue_number }}
+          ISSUE_NUMBER: ${{ inputs.issue_number }}
         run: |
+          {
+            echo "Automated implementation generated by Developer Agent."
+            echo
+            echo "Closes #${ISSUE_NUMBER}"
+            echo
+            echo "Modified files:"
+            while IFS= read -r FILE_PATH; do
+              if [ -n "$FILE_PATH" ]; then
+                echo "- \`$FILE_PATH\`"
+              fi
+            done < changed-files.txt
+            echo
+            echo "The selected files came from the validated planning-agent output."
+          } > pull-request-body.md
+
           gh pr create \
             --head "$BRANCH" \
             --base main \
             --title "Developer Agent: Implementation for Issue #${ISSUE_NUMBER}" \
-            --body "
-          Automated implementation generated by Developer Agent.
-
-          Issue:
-          #${ISSUE_NUMBER}
-
-          This PR modifies:
-          - ${{ github.event.inputs.file_path }}
-          "
+            --body-file pull-request-body.md
