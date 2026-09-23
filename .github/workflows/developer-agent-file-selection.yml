@@ -1,0 +1,131 @@
+name: Developer Agent - File Selection
+
+on:
+  issues:
+    types:
+      - opened
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  file-selection:
+    runs-on: ubuntu-latest
+
+    environment: test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Install OpenAI SDK
+        run: |
+          pip install openai
+
+      - name: Collect repository context
+        run: |
+          mkdir -p context
+
+          find . \
+            -type f \
+            ! -path "./.git/*" \
+            ! -path "./node_modules/*" \
+            ! -path "./dist/*" \
+            | sort \
+            > context/repository-files.txt
+
+          head -300 context/repository-files.txt \
+            > context/repository-files-short.txt
+
+      - name: Determine files to modify
+        env:
+          FOUNDRY_ENDPOINT: ${{ secrets.FOUNDRY_ENDPOINT }}
+          FOUNDRY_API_KEY: ${{ secrets.FOUNDRY_API_KEY }}
+          FOUNDRY_MODEL_DEPLOYMENT: ${{ secrets.FOUNDRY_MODEL_DEPLOYMENT }}
+
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+
+        run: |
+          python <<'EOF'
+          import os
+          import json
+          from openai import OpenAI
+
+          client = OpenAI(
+              api_key=os.environ["FOUNDRY_API_KEY"],
+              base_url=os.environ["FOUNDRY_ENDPOINT"]
+          )
+
+          with open(
+              "context/repository-files-short.txt",
+              "r",
+              encoding="utf-8"
+          ) as f:
+              repository_files = f.read()
+
+          prompt = f"""
+          You are a senior software engineer.
+
+          Analyze the GitHub issue.
+
+          Based on the repository structure,
+          determine which files are likely to require changes.
+
+          Return ONLY valid JSON.
+
+          Format:
+
+          {{
+            "summary": "...",
+            "files_to_modify": [
+              {{
+                "path": "path/to/file",
+                "reason": "why"
+              }}
+            ]
+          }}
+
+          ISSUE TITLE:
+          {os.environ['ISSUE_TITLE']}
+
+          ISSUE DESCRIPTION:
+          {os.environ['ISSUE_BODY']}
+
+          REPOSITORY FILES:
+          {repository_files}
+          """
+
+          response = client.responses.create(
+              model=os.environ["FOUNDRY_MODEL_DEPLOYMENT"],
+              input=prompt
+          )
+
+          output = response.output_text
+
+          with open(
+              "selected-files.json",
+              "w",
+              encoding="utf-8"
+          ) as f:
+              f.write(output)
+
+          print(output)
+
+          EOF
+
+      - name: Comment selected files to issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+          echo '```json' > issue-comment.md
+          cat selected-files.json >> issue-comment.md
+          echo '```' >> issue-comment.md
+
+          gh issue comment \
+            "$ISSUE_NUMBER" \
+            --body-file issue-comment.md
