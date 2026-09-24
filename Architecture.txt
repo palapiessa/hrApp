@@ -12,7 +12,9 @@ High-Level Architecture
 ┌─────────────────────────┐
 │ GitHub Repository       │
 │                         │
-│ Issues                  │
+│ Web Application         │
+│ GH Actions Scripts      │
+│ Automated Tests         │
 │ Source Code             │
 │ Pull Requests           │
 └─────────────┬───────────┘
