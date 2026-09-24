@@ -180,6 +180,13 @@ jobs:
               base_url=os.environ["FOUNDRY_ENDPOINT"],
           )
 
+          def normalize(text):
+              # Trailing whitespace and CRLF would fail `git diff --check` later.
+              return "\n".join(
+                  line.rstrip()
+                  for line in text.replace("\r\n", "\n").split("\n")
+              ).strip()
+
           changed_files = []
 
           for selected_file in plan["files_to_modify"]:
@@ -234,7 +241,7 @@ jobs:
                   input=prompt,
               )
 
-              updated_content = response.output_text.strip()
+              updated_content = normalize(response.output_text)
 
               if not updated_content:
                   raise RuntimeError(
@@ -246,10 +253,9 @@ jobs:
                       f"Developer Agent returned a code fence for {file_path}."
                   )
 
-              if updated_content == current_content.strip():
-                  raise RuntimeError(
-                      f"Developer Agent made no change to {file_path}."
-                  )
+              if updated_content == normalize(current_content):
+                  print(f"Unchanged, skipping: {file_path}")
+                  continue
 
               path.write_text(
                   updated_content + "\n",
@@ -260,7 +266,7 @@ jobs:
               print(f"Updated: {file_path}")
 
           Path("changed-files.txt").write_text(
-              "\n".join(changed_files) + "\n",
+              "".join(f"{file_path}\n" for file_path in changed_files),
               encoding="utf-8",
           )
           EOF
