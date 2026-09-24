@@ -1,6 +1,6 @@
 # Project Description
 
-This repository contains two agents: a Developer Agent and a Test Automation Agent. The purpose is to assist a human developer or product owner by automating implementation and testing activities while keeping decision-making and approvals under human control.
+This repository brings together three main parts: a web application, GitHub Actions scripts with an agentic team, and automated tests. It is designed to help a human developer or product owner by coordinating implementation and validation activities while keeping decision-making and approvals under human control.
 
 ## Agent-a-Thon Project
 
@@ -54,7 +54,7 @@ Human notified
 - Can override agent recommendations when necessary
 
 ### Developer Agent Trigger
-GitHub Action triggers when: 
+GitHub Action triggers when:
 - Issue labeled agent-dev
 - Issue assigned to Developer Agent service account
 - Issue comment contains /implement
@@ -196,7 +196,7 @@ Write Repository Files
 
 ## Event-Driven Workflow
 
-Flow 1: Issue created 
+Flow 1: Issue created
 Human
     ↓
 Create GitHub Issue
