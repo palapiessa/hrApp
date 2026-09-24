@@ -48,6 +48,30 @@ jobs:
           echo "head-sha=$(jq -r '.headRefOid' pr-context.json)" >> "$GITHUB_OUTPUT"
           echo "head-repo=$(jq -r '.headRepository.nameWithOwner' pr-context.json)" >> "$GITHUB_OUTPUT"
 
+      - name: Check PR repository
+        id: repository
+        run: |
+          if [ "${{ steps.pr.outputs.head-repo }}" = "${{ github.repository }}" ]; then
+            echo "same-repository=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "same-repository=false" >> "$GITHUB_OUTPUT"
+            echo "Fork pull requests are analyzed, but generated tests will not be pushed."
+          fi
+  
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Install OpenAI SDK
+        run: pip install openai==3.19.0
+
+      - name: Collect implementation context
+        run: |
+          git fetch origin "${{ steps.pr.outputs.base-ref }}"
+          git diff "origin/${{ steps.pr.outputs.base-ref }}...HEAD" > pr.diff
+          git diff --name-only "origin/${{ steps.pr.outputs.base-ref }}...HEAD" > changed-files.txt
+
       - name: Fetch linked issue
         env:
           GH_TOKEN: ${{ github.token }}
@@ -72,30 +96,6 @@ jobs:
             > issue.json
 
           cat issue.json
-
-      - name: Check PR repository
-        id: repository
-        run: |
-          if [ "${{ steps.pr.outputs.head-repo }}" = "${{ github.repository }}" ]; then
-            echo "same-repository=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "same-repository=false" >> "$GITHUB_OUTPUT"
-            echo "Fork pull requests are analyzed, but generated tests will not be pushed."
-          fi
-  
-      - name: Checkout PR code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          
-      - name: Install OpenAI SDK
-        run: pip install openai==3.19.0
-
-      - name: Collect implementation context
-        run: |
-          git fetch origin "${{ steps.pr.outputs.base-ref }}"
-          git diff "origin/${{ steps.pr.outputs.base-ref }}...HEAD" > pr.diff
-          git diff --name-only "origin/${{ steps.pr.outputs.base-ref }}...HEAD" > changed-files.txt
 
       - name: Generate testing decision
         env:
