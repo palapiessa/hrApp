@@ -40,7 +40,13 @@ jobs:
         run: |
           npm run server > "$RUNNER_TEMP/json-server.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/json-server.pid"
-
+  
+      - name: Show target URL
+        run: |
+          echo "PLAYWRIGHT_BASE_URL=$PLAYWRIGHT_BASE_URL"
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ vars.PLAYWRIGHT_BASE_URL }}
+            
       - name: Run Playwright tests
         working-directory: tests
         env:
