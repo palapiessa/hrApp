@@ -4,6 +4,12 @@ test.describe('Employee table search', () => {
   test('shows surname search controls and filters employees by partial name', async ({ page }) => {
     await page.goto('/');
 
+    await expect(page).toHaveURL(/\/$/);
+    await expect(page.getByRole('heading', { name: 'HR Management System' })).toBeVisible();
+
+    await page.getByRole('link', { name: 'Employee Table' }).click();
+    await page.waitForURL('**/table');
+
     const surnameInput = page.getByRole('textbox', { name: /surname/i });
     const searchButton = page.getByRole('button', { name: /search/i });
 
