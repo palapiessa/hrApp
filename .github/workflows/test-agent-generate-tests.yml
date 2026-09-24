@@ -48,6 +48,19 @@ jobs:
           echo "head-sha=$(jq -r '.headRefOid' pr-context.json)" >> "$GITHUB_OUTPUT"
           echo "head-repo=$(jq -r '.headRepository.nameWithOwner' pr-context.json)" >> "$GITHUB_OUTPUT"
 
+      - name: Fetch linked issue
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ISSUE_NUMBER=$(grep -oE '#[0-9]+' pr-context.json | head -1 | tr -d '#')
+
+          echo "ISSUE_NUMBER=$ISSUE_NUMBER"
+
+          gh issue view "$ISSUE_NUMBER" \
+            --repo "${{ github.repository }}" \
+            --json title,body \
+            > issue.json
+
       - name: Check PR repository
         id: repository
         run: |
@@ -91,7 +104,23 @@ jobs:
 
           with open("pr.diff", encoding="utf-8") as file:
               diff = file.read()
+          
+          pr_title = os.environ["PR_TITLE"]
+          pr_body = os.environ["PR_BODY"]
+          
+          issue_title = ""
+          issue_body = ""
 
+          try:
+              with open("issue.json", encoding="utf-8") as file:
+                  issue = json.load(file)
+
+              issue_title = issue.get("title", "")
+              issue_body = issue.get("body", "")
+          except FileNotFoundError:
+              print("issue.json not found, continuing without issue context")
+
+              
           client = OpenAI(
               api_key=os.environ["FOUNDRY_API_KEY"],
               base_url=os.environ["FOUNDRY_ENDPOINT"],
@@ -100,11 +129,34 @@ jobs:
           prompt = f"""
           You are a senior Test Automation Engineer.
 
-          Review the pull request and determine whether a Playwright test is required.
-          Documentation-only, markdown, README, and non-user-visible changes normally
-          do not require Playwright tests.
+          Review the complete change request.
 
-          Return ONLY valid JSON with this shape:
+          You are given:
+
+          - Original GitHub issue
+          - Pull request description
+          - Changed files
+          - Git diff
+
+          Determine:
+
+          1. Is automated UI testing required?
+          2. Why or why not?
+          3. What user scenarios should be tested?
+          4. What risks were introduced?
+          5. If testing is required:
+            - Generate a Playwright test name.
+            - Generate a concise Playwright test description.
+
+          Important:
+
+          - Documentation-only changes usually do not require Playwright tests.
+          - Base recommendations on the ORIGINAL REQUIREMENT, not only the implementation.
+          - Consider user-visible behaviour.
+          - Consider regression risks.
+
+          Return ONLY valid JSON.
+
           {{
             "test_required": true,
             "reason": "...",
@@ -112,16 +164,22 @@ jobs:
             "test_description": "..."
           }}
 
+          ISSUE TITLE:
+          {issue_title}
+
+          ISSUE DESCRIPTION:
+          {issue_body}
+
           PR TITLE:
-          {os.environ["PR_TITLE"]}
+          {pr_title}
 
           PR DESCRIPTION:
-          {os.environ["PR_BODY"]}
+          {pr_body}
 
           CHANGED FILES:
           {changed_files}
 
-          DIFF:
+          IMPLEMENTATION DIFF:
           {diff[:12000]}
           """
 

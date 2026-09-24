@@ -37,10 +37,12 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Start JSON Server
+        if: ${{ !vars.PLAYWRIGHT_BASE_URL }}
         working-directory: web
         run: |
           npm run server > "$RUNNER_TEMP/json-server.log" 2>&1 &
           echo $! > "$RUNNER_TEMP/json-server.pid"
+          
   
       - name: Show target URL
         run: |
@@ -61,9 +63,17 @@ jobs:
           name: playwright-report
           path: tests/playwright-report/
           retention-days: 14
-
-      - name: Upload JSON Server log
+      
+      - name: Upload Playwright videos
         if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-videos
+          path: tests/test-results/
+          retention-days: 14
+          
+      - name: Upload JSON Server log
+        if: ${{ always() && !vars.PLAYWRIGHT_BASE_URL }}
         uses: actions/upload-artifact@v4
         with:
           name: json-server-log
