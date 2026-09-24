@@ -12,7 +12,9 @@ export default defineConfig({
   fullyParallel: true,
   reporter: [['html', { open: 'never' }]],
   use: {
-    baseURL
+    baseURL,
+    video: 'on',
+    screenshot: 'only-on-failure'
   },
   projects: [
     {
