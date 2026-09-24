@@ -6,6 +6,12 @@ on:
       - opened
       - reopened
       - synchronize
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Pull request number to test"
+        required: true
+        type: string
 
 permissions:
   contents: write
@@ -17,17 +23,36 @@ jobs:
     environment: test
 
     steps:
+      - name: Resolve pull request context
+        id: pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
+        run: |
+          gh pr view "$PR_NUMBER" \
+            --json number,title,body,baseRefName,headRefOid,headRepository \
+            > pr-context.json
+
+          echo "number=$(jq -r '.number' pr-context.json)" >> "$GITHUB_OUTPUT"
+          echo "title=$(jq -r '.title' pr-context.json)" >> "$GITHUB_OUTPUT"
+          echo "body<<EOF" >> "$GITHUB_OUTPUT"
+          jq -r '.body' pr-context.json >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+          echo "base-ref=$(jq -r '.baseRefName' pr-context.json)" >> "$GITHUB_OUTPUT"
+          echo "head-sha=$(jq -r '.headRefOid' pr-context.json)" >> "$GITHUB_OUTPUT"
+          echo "head-repo=$(jq -r '.headRepository.nameWithOwner' pr-context.json)" >> "$GITHUB_OUTPUT"
+
       - name: Checkout PR head
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          repository: ${{ github.event.pull_request.head.repo.full_name }}
-          ref: ${{ github.event.pull_request.head.sha }}
+          repository: ${{ steps.pr.outputs.head-repo }}
+          ref: ${{ steps.pr.outputs.head-sha }}
 
       - name: Check PR repository
         id: repository
         run: |
-          if [ "${{ github.event.pull_request.head.repo.full_name }}" = "${{ github.repository }}" ]; then
+          if [ "${{ steps.pr.outputs.head-repo }}" = "${{ github.repository }}" ]; then
             echo "same-repository=true" >> "$GITHUB_OUTPUT"
           else
             echo "same-repository=false" >> "$GITHUB_OUTPUT"
@@ -39,17 +64,17 @@ jobs:
 
       - name: Collect implementation context
         run: |
-          git fetch origin "${{ github.event.pull_request.base.ref }}"
-          git diff "origin/${{ github.event.pull_request.base.ref }}...HEAD" > pr.diff
-          git diff --name-only "origin/${{ github.event.pull_request.base.ref }}...HEAD" > changed-files.txt
+          git fetch origin "${{ steps.pr.outputs.base-ref }}"
+          git diff "origin/${{ steps.pr.outputs.base-ref }}...HEAD" > pr.diff
+          git diff --name-only "origin/${{ steps.pr.outputs.base-ref }}...HEAD" > changed-files.txt
 
       - name: Generate testing decision
         env:
           FOUNDRY_ENDPOINT: ${{ secrets.FOUNDRY_ENDPOINT }}
           FOUNDRY_API_KEY: ${{ secrets.FOUNDRY_API_KEY }}
           FOUNDRY_MODEL_DEPLOYMENT: ${{ secrets.FOUNDRY_MODEL_DEPLOYMENT }}
-          PR_TITLE: ${{ github.event.pull_request.title }}
-          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_TITLE: ${{ steps.pr.outputs.title }}
+          PR_BODY: ${{ steps.pr.outputs.body }}
         run: |
           python <<'EOF'
           import json
@@ -211,7 +236,7 @@ jobs:
             git config user.name "PetriTestAgent"
             git config user.email "petrialapiessa-test-2026@hotmail.com"
 
-            branch="test-agent/pr-${{ github.event.pull_request.number }}-${GITHUB_RUN_ID}"
+            branch="test-agent/pr-${{ steps.pr.outputs.number }}-${GITHUB_RUN_ID}"
             git checkout -b "$branch"
             git add tests/specs/
             git commit -m "Test Agent: generate Playwright tests"
@@ -227,14 +252,24 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh pr create \
-            --base "${{ github.event.pull_request.base.ref }}" \
+            --base "${{ steps.pr.outputs.base-ref }}" \
             --head "${{ steps.generated-branch.outputs.branch }}" \
-            --title "Test Agent: generated tests for #${{ github.event.pull_request.number }}" \
+            --title "Test Agent: generated tests for #${{ steps.pr.outputs.number }}" \
             --body-file test-agent-review.md
 
       - name: Comment on source PR
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh pr comment "${{ github.event.pull_request.number }}" \
-            --body-file test-agent-review.md
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            {
+              echo "testing purposes"
+              echo
+              cat test-agent-review.md
+            } > pr-comment.md
+          else
+            cp test-agent-review.md pr-comment.md
+          fi
+
+          gh pr comment "${{ steps.pr.outputs.number }}" \
+            --body-file pr-comment.md
