@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Button,
   Paper,
   Table,
   TableBody,
@@ -7,6 +8,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TextField,
   Typography,
 } from '@mui/material';
 import { getAnimalEmoji } from '../utils/animalEmoji';
@@ -16,11 +18,15 @@ import { API_URL } from '../config';
 const EmployeesTable = () => {
   const axiosInstance = useAxios();
   const [data, setData] = useState([]);
+  const [searchValue, setSearchValue] = useState('');
+  const [searchName, setSearchName] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  // Fetch employees on mount
-  useEffect(() => {
-    axiosInstance
+
+  const fetchEmployees = (surname = '') => {
+    const normalizedSurname = surname.trim();
+
+    return axiosInstance
       .get(`${API_URL}/employees`)
       .then((res) => {
         const employees = Array.isArray(res.data)
@@ -31,11 +37,32 @@ const EmployeesTable = () => {
           throw new Error('Expected employees array from API');
         }
 
-        setData(employees);
+        if (!normalizedSurname || normalizedSurname === '*') {
+          setData(employees);
+          return;
+        }
+
+        const filteredEmployees = employees.filter((employee) =>
+          employee.name?.toLowerCase().includes(normalizedSurname.toLowerCase())
+        );
+        setData(filteredEmployees);
       })
       .catch((err) => setError(err))
       .finally(() => setLoading(false));
+  };
+
+  // Fetch employees on mount
+  useEffect(() => {
+    fetchEmployees();
   }, []);
+
+  const handleSearch = () => {
+    setLoading(true);
+    setError(null);
+    fetchEmployees(searchValue);
+    setSearchName(searchValue);
+  };
+
   if (loading) {
     return <Typography align="center">Loading employees...</Typography>;
   }
@@ -54,6 +81,24 @@ const EmployeesTable = () => {
       <Typography variant="h4" align="center" marginBottom={5}>
         All Employees
       </Typography>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          gap: '12px',
+          marginBottom: '20px',
+        }}
+      >
+        <TextField
+          label="Surname"
+          value={searchValue}
+          onChange={(e) => setSearchValue(e.target.value)}
+          size="small"
+        />
+        <Button variant="contained" onClick={handleSearch}>
+          Search
+        </Button>
+      </div>
       <div className="table-container">
         <TableContainer component={Paper} sx={{ boxShadow: 10 }}>
           <Table>
