@@ -1,9 +1,9 @@
-<h1 align="center">🌟 HR Management System (React + JSON Server API) 🌟</h1>
+<h1 align="center">🌟 HR Management System Web App, GitHub Actions & Automated Tests 🌟</h1>
 
 <p align="center">
-A modern, user-friendly HR management web application built with <strong>React</strong>, <strong>React Router</strong>, <strong>Axios</strong>, and a <strong>JSON Server backend</strong>.
+A modern, user-friendly repository that combines a <strong>React</strong> HR management web application, <strong>GitHub Actions scripts with an agentic team</strong>, and <strong>automated tests</strong> for reliable delivery.
 <br/>
-This system enables teams to manage employees, track work experience, and automate HR reminders.
+This system helps teams manage employees, track work experience, automate HR reminders, and validate changes through CI and test workflows.
 </p>
 
 <p align="center">
@@ -26,8 +26,9 @@ This repository is part of the **Agent-a-Thon** project, a workflow-focused buil
 
 The project combines:
 - a working product codebase,
-- issue-driven documentation updates,
-- and a structured agent workflow for making changes safely and consistently.
+- GitHub Actions automation with an agentic team,
+- automated tests,
+- and issue-driven documentation updates.
 
 ---
 
