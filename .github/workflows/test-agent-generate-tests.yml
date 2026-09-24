@@ -57,7 +57,12 @@ jobs:
             echo "same-repository=false" >> "$GITHUB_OUTPUT"
             echo "Fork pull requests are analyzed, but generated tests will not be pushed."
           fi
-
+  
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
       - name: Install OpenAI SDK
         run: pip install openai==3.19.0
 
