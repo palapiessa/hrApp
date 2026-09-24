@@ -8,6 +8,9 @@ test('lists all employees on the home page', async ({ page }) => {
     page.getByRole('heading', { name: 'HR Management System' })
   ).toBeVisible();
 
+  await page.getByRole('link', { name: 'Employee Table' }).click();
+  await page.waitForURL('**/table');
+
   const employeeNames = [
     'Aino Virtanen',
     'Liina Koskinen',
