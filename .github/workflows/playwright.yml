@@ -1,10 +1,6 @@
 name: Playwright Tests
 
 on:
-  push:
-    branches: [main, local-install]
-  pull_request:
-    branches: [main, local-install]
   workflow_dispatch:
 
 permissions:
@@ -47,6 +43,8 @@ jobs:
 
       - name: Run Playwright tests
         working-directory: tests
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ vars.PLAYWRIGHT_BASE_URL }}
         run: npm test
 
       - name: Upload Playwright report
