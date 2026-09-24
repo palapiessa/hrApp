@@ -1,4 +1,4 @@
-const { test, expect } = require('@playwright/test');
+import { expect, test } from '@playwright/test';
 
 test.describe('Employee table search', () => {
   test('shows surname search controls and filters employees by partial name', async ({ page }) => {
