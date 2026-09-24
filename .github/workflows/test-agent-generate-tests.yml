@@ -301,20 +301,26 @@ jobs:
         if: steps.repository.outputs.same-repository == 'true'
         id: generated-branch
         run: |
-          if ! git diff --quiet -- tests/specs; then
-            git config user.name "PetriTestAgent"
-            git config user.email "petrialapiessa-test-2026@hotmail.com"
 
-            branch="test-agent/pr-${{ steps.pr.outputs.number }}-${GITHUB_RUN_ID}"
-            git checkout -b "$branch"
-            git add tests/specs/
-            git commit -m "Test Agent: generate Playwright tests"
-            git push --set-upstream origin "$branch"
-            echo "branch=$branch" >> "$GITHUB_OUTPUT"
-          else
+          git status
+
+          git add tests/specs/
+
+          if git diff --cached --quiet; then
             echo "No generated tests to commit."
+            exit 0
           fi
+          
+          git config user.name "PetriTestAgent"
+          git config user.email "petrialapiessa-test-2026@hotmail.com"
 
+          branch="test-agent/pr-${{ steps.pr.outputs.number }}-${GITHUB_RUN_ID}"
+          git checkout -b "$branch"
+          git add tests/specs/
+          git commit -m "Test Agent: generate Playwright tests"
+          git push --set-upstream origin "$branch"
+          echo "branch=$branch" >> "$GITHUB_OUTPUT"
+        
       - name: Create generated-tests pull request
         if: steps.repository.outputs.same-repository == 'true' && steps.generated-branch.outputs.branch != ''
         env:
