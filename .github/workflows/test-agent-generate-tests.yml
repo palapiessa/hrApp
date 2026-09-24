@@ -23,7 +23,7 @@ jobs:
         id: pr
         env:
           GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event_name == 'workflow_dispatch' && inputs.pr_number || github.event.pull_request.number }}
+          PR_NUMBER: ${{ inputs.pr_number }}
         run: |
           echo "PR_NUMBER=$PR_NUMBER"
           echo "REPOSITORY=${{ github.repository }}"
@@ -33,22 +33,20 @@ jobs:
             --json number,title,body,baseRefName,headRefOid,headRepository \
             > pr-context.json
 
+          cat pr-context.json
+
           echo "number=$(jq -r '.number' pr-context.json)" >> "$GITHUB_OUTPUT"
           echo "title=$(jq -r '.title' pr-context.json)" >> "$GITHUB_OUTPUT"
 
-          echo "body<<EOF" >> "$GITHUB_OUTPUT"
-          jq -r '.body' pr-context.json >> "$GITHUB_OUTPUT"
-          echo "EOF" >> "$GITHUB_OUTPUT"
+          {
+            echo "body<<EOF"
+            jq -r '.body // ""' pr-context.json
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
 
           echo "base-ref=$(jq -r '.baseRefName' pr-context.json)" >> "$GITHUB_OUTPUT"
           echo "head-sha=$(jq -r '.headRefOid' pr-context.json)" >> "$GITHUB_OUTPUT"
           echo "head-repo=$(jq -r '.headRepository.nameWithOwner' pr-context.json)" >> "$GITHUB_OUTPUT"
-            - name: Checkout PR head
-              uses: actions/checkout@v4
-              with:
-                fetch-depth: 0
-                repository: ${{ steps.pr.outputs.head-repo }}
-                ref: ${{ steps.pr.outputs.head-sha }}
 
       - name: Check PR repository
         id: repository
