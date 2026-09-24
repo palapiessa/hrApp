@@ -1,0 +1,240 @@
+name: Test Automation Agent - Generate Tests
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  test-agent:
+    runs-on: ubuntu-latest
+    environment: test
+
+    steps:
+      - name: Checkout PR head
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Check PR repository
+        id: repository
+        run: |
+          if [ "${{ github.event.pull_request.head.repo.full_name }}" = "${{ github.repository }}" ]; then
+            echo "same-repository=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "same-repository=false" >> "$GITHUB_OUTPUT"
+            echo "Fork pull requests are analyzed, but generated tests will not be pushed."
+          fi
+
+      - name: Install OpenAI SDK
+        run: pip install openai==3.19.0
+
+      - name: Collect implementation context
+        run: |
+          git fetch origin "${{ github.event.pull_request.base.ref }}"
+          git diff "origin/${{ github.event.pull_request.base.ref }}...HEAD" > pr.diff
+          git diff --name-only "origin/${{ github.event.pull_request.base.ref }}...HEAD" > changed-files.txt
+
+      - name: Generate testing decision
+        env:
+          FOUNDRY_ENDPOINT: ${{ secrets.FOUNDRY_ENDPOINT }}
+          FOUNDRY_API_KEY: ${{ secrets.FOUNDRY_API_KEY }}
+          FOUNDRY_MODEL_DEPLOYMENT: ${{ secrets.FOUNDRY_MODEL_DEPLOYMENT }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          python <<'EOF'
+          import json
+          import os
+          import re
+          from openai import OpenAI
+
+          with open("changed-files.txt", encoding="utf-8") as file:
+              changed_files = file.read()
+
+          with open("pr.diff", encoding="utf-8") as file:
+              diff = file.read()
+
+          client = OpenAI(
+              api_key=os.environ["FOUNDRY_API_KEY"],
+              base_url=os.environ["FOUNDRY_ENDPOINT"],
+          )
+
+          prompt = f"""
+          You are a senior Test Automation Engineer.
+
+          Review the pull request and determine whether a Playwright test is required.
+          Documentation-only, markdown, README, and non-user-visible changes normally
+          do not require Playwright tests.
+
+          Return ONLY valid JSON with this shape:
+          {{
+            "test_required": true,
+            "reason": "...",
+            "test_name": "...",
+            "test_description": "..."
+          }}
+
+          PR TITLE:
+          {os.environ["PR_TITLE"]}
+
+          PR DESCRIPTION:
+          {os.environ["PR_BODY"]}
+
+          CHANGED FILES:
+          {changed_files}
+
+          DIFF:
+          {diff[:12000]}
+          """
+
+          response = client.responses.create(
+              model=os.environ["FOUNDRY_MODEL_DEPLOYMENT"],
+              input=prompt,
+          )
+          raw_result = response.output_text.strip()
+
+          if not raw_result or raw_result.startswith("```"):
+              raise RuntimeError("The model returned invalid test decision output.")
+
+          try:
+              decision = json.loads(raw_result)
+          except json.JSONDecodeError as error:
+              raise RuntimeError(f"Invalid test decision JSON: {error}") from error
+
+          if not isinstance(decision, dict):
+              raise RuntimeError("The test decision must be a JSON object.")
+          if not isinstance(decision.get("test_required"), bool):
+              raise RuntimeError("test_required must be a boolean.")
+          if not isinstance(decision.get("reason"), str):
+              raise RuntimeError("reason must be a string.")
+
+          if decision["test_required"]:
+              for field in ("test_name", "test_description"):
+                  value = decision.get(field)
+                  if not isinstance(value, str) or not value.strip():
+                      raise RuntimeError(f"{field} must be a non-empty string.")
+
+              if not re.fullmatch(r"[A-Za-z0-9_-]+", decision["test_name"]):
+                  raise RuntimeError(
+                      "test_name may contain only letters, numbers, underscores, and hyphens."
+                  )
+
+          with open("test-decision.json", "w", encoding="utf-8") as file:
+              json.dump(decision, file, indent=2)
+
+          print(json.dumps(decision, indent=2))
+          EOF
+
+      - name: Generate Playwright test if needed
+        env:
+          FOUNDRY_ENDPOINT: ${{ secrets.FOUNDRY_ENDPOINT }}
+          FOUNDRY_API_KEY: ${{ secrets.FOUNDRY_API_KEY }}
+          FOUNDRY_MODEL_DEPLOYMENT: ${{ secrets.FOUNDRY_MODEL_DEPLOYMENT }}
+        run: |
+          python <<'EOF'
+          import json
+          import os
+          from pathlib import Path
+
+          from openai import OpenAI
+
+          decision = json.loads(Path("test-decision.json").read_text(encoding="utf-8"))
+
+          if not decision["test_required"]:
+              Path("test-agent-review.md").write_text(
+                  "## Test Automation Agent\n\n"
+                  "No Playwright test required.\n\n"
+                  f"Reason: {decision['reason']}\n",
+                  encoding="utf-8",
+              )
+              print("No test generation needed.")
+              raise SystemExit(0)
+
+          diff = Path("pr.diff").read_text(encoding="utf-8")
+          client = OpenAI(
+              api_key=os.environ["FOUNDRY_API_KEY"],
+              base_url=os.environ["FOUNDRY_ENDPOINT"],
+          )
+
+          prompt = f"""
+          You are a senior Playwright engineer.
+          Generate a complete JavaScript Playwright test file.
+
+          TEST DESCRIPTION:
+          {decision["test_description"]}
+
+          IMPLEMENTATION DIFF:
+          {diff[:12000]}
+
+          Return ONLY JavaScript source code. Do not use explanations or Markdown fences.
+          """
+
+          response = client.responses.create(
+              model=os.environ["FOUNDRY_MODEL_DEPLOYMENT"],
+              input=prompt,
+          )
+          generated_content = response.output_text.strip()
+
+          if not generated_content or generated_content.startswith("```"):
+              raise RuntimeError("The model returned invalid Playwright test output.")
+
+          test_directory = Path("tests/specs")
+          test_directory.mkdir(parents=True, exist_ok=True)
+          test_file = test_directory / f"{decision['test_name']}.spec.js"
+          test_file.write_text(generated_content + "\n", encoding="utf-8")
+
+          Path("test-agent-review.md").write_text(
+              "## Test Automation Agent\n\n"
+              "Playwright test generated.\n\n"
+              f"Reason: {decision['reason']}\n"
+              f"Generated test: {test_file}\n",
+              encoding="utf-8",
+          )
+
+          print(f"Generated: {test_file}")
+          EOF
+
+      - name: Commit generated tests to a separate branch
+        if: steps.repository.outputs.same-repository == 'true'
+        id: generated-branch
+        run: |
+          if ! git diff --quiet -- tests/specs; then
+            git config user.name "PetriTestAgent"
+            git config user.email "petrialapiessa-test-2026@hotmail.com"
+
+            branch="test-agent/pr-${{ github.event.pull_request.number }}-${GITHUB_RUN_ID}"
+            git checkout -b "$branch"
+            git add tests/specs/
+            git commit -m "Test Agent: generate Playwright tests"
+            git push --set-upstream origin "$branch"
+            echo "branch=$branch" >> "$GITHUB_OUTPUT"
+          else
+            echo "No generated tests to commit."
+          fi
+
+      - name: Create generated-tests pull request
+        if: steps.repository.outputs.same-repository == 'true' && steps.generated-branch.outputs.branch != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr create \
+            --base "${{ github.event.pull_request.base.ref }}" \
+            --head "${{ steps.generated-branch.outputs.branch }}" \
+            --title "Test Agent: generated tests for #${{ github.event.pull_request.number }}" \
+            --body-file test-agent-review.md
+
+      - name: Comment on source PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr comment "${{ github.event.pull_request.number }}" \
+            --body-file test-agent-review.md

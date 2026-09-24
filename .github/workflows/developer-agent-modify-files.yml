@@ -27,7 +27,7 @@ jobs:
 
       - name: Install OpenAI SDK
         run: |
-          pip install openai
+          pip install openai==3.19.0
 
       - name: Fetch issue and planner output
         env:
