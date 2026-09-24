@@ -138,3 +138,19 @@ export const employees = [
     skills: ['Recruiting', 'Communication', 'Employee Relations'],
   },
 ];
+
+export const getEmployeesBySurname = (surname) => {
+  if (!surname || surname.trim() === '*' || surname.trim() === '') {
+    return employees;
+  }
+
+  const searchTerm = surname.trim().toLowerCase();
+
+  return employees.filter((employee) => {
+    const fullName = employee.name.toLowerCase();
+    const nameParts = employee.name.split(' ');
+    const employeeSurname = nameParts[nameParts.length - 1].toLowerCase();
+
+    return fullName.includes(searchTerm) || employeeSurname.includes(searchTerm);
+  });
+};
