@@ -76,12 +76,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          ISSUE_NUMBER=$(
-            jq -r '.body // ""' pr-context.json |
-            grep -oE '#[0-9]+' |
-            head -1 |
-            tr -d '#'
-          )
+          ISSUE_NUMBER=27
 
           echo "Found issue: $ISSUE_NUMBER"
 
