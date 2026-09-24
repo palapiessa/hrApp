@@ -52,14 +52,26 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          ISSUE_NUMBER=$(grep -oE '#[0-9]+' pr-context.json | head -1 | tr -d '#')
+          ISSUE_NUMBER=$(
+            jq -r '.body // ""' pr-context.json |
+            grep -oE '#[0-9]+' |
+            head -1 |
+            tr -d '#'
+          )
 
-          echo "ISSUE_NUMBER=$ISSUE_NUMBER"
+          echo "Found issue: $ISSUE_NUMBER"
+
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "No linked issue found in PR body"
+            exit 1
+          fi
 
           gh issue view "$ISSUE_NUMBER" \
             --repo "${{ github.repository }}" \
             --json title,body \
             > issue.json
+
+          cat issue.json
 
       - name: Check PR repository
         id: repository
