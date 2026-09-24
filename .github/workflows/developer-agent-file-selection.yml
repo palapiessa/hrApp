@@ -72,8 +72,16 @@ jobs:
 
           Analyze the GitHub issue.
 
-          Based on the repository structure,
-          determine which files are likely to require changes.
+          Based ONLY on the files listed in REPOSITORY FILES,
+          determine which existing repository files should be modified.
+
+          Important:
+
+          - You MUST only return files that appear exactly in the REPOSITORY FILES list.
+          - Do NOT invent file names.
+          - Do NOT infer missing CSS files.
+          - Do NOT create hypothetical files.
+          - Every path returned in files_to_modify must exactly match a path from REPOSITORY FILES.
 
           Return ONLY valid JSON.
 
