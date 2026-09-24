@@ -217,10 +217,14 @@ jobs:
                   if not isinstance(value, str) or not value.strip():
                       raise RuntimeError(f"{field} must be a non-empty string.")
 
-              if not re.fullmatch(r"[A-Za-z0-9_-]+", decision["test_name"]):
-                  raise RuntimeError(
-                      "test_name may contain only letters, numbers, underscores, and hyphens."
-                  )
+             decision["test_name"] = re.sub(
+                 r"[^A-Za-z0-9_-]+",
+                 "_",
+                 decision["test_name"]
+             ).strip("_")
+
+             if not decision["test_name"]:
+                 decision["test_name"] = "generated_test"
 
           with open("test-decision.json", "w", encoding="utf-8") as file:
               json.dump(decision, file, indent=2)
