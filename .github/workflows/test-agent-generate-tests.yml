@@ -1,11 +1,7 @@
 name: Test Automation Agent - Generate Tests
 
 on:
-  pull_request_target:
-    types:
-      - opened
-      - reopened
-      - synchronize
+
   workflow_dispatch:
     inputs:
       pr_number:
