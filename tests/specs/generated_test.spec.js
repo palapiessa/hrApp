@@ -25,27 +25,31 @@ test.describe('Employee table search', () => {
       });
 
     const getEmployeeNames = async () => {
-      const rowCount = await getEmployeeRows().count();
+      const rows = getEmployeeRows();
+      const count = await rows.count();
+
       const names = [];
-      for (let i = 0; i < rowCount; i++) {
-        const row = getEmployeeRows().nth(i);
-        const cells = row.locator('td');
-        const cellCount = await cells.count();
-        let rowText = '';
-        for (let j = 0; j < cellCount; j++) {
-          const text = (await cells.nth(j).innerText()).trim();
-          if (text) rowText += `${text} `;
-        }
-        names.push(rowText.trim());
+
+      for (let i = 0; i < count; i++) {
+        const name = await rows
+          .nth(i)
+          .locator('td')
+          .nth(1)
+          .innerText();
+
+        names.push(name.trim());
       }
+
       return names;
     };
 
+
     const initialNames = await getEmployeeNames();
     expect(initialNames.length).toBeGreaterThan(0);
-
-    const sampleSurname = initialNames[0].split(/\s+/).pop();
-    expect(sampleSurname).toBeTruthy();
+    const sampleSurname =
+      initialNames[0]
+        .split(/\s+/)
+        .pop();
 
     const partial = sampleSurname.slice(0, Math.max(1, Math.min(3, sampleSurname.length))).toLowerCase();
 
