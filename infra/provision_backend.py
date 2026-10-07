@@ -7,6 +7,7 @@ import zipfile
 from pathlib import Path
 
 import requests
+from azure.core.exceptions import ResourceNotFoundError
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.web import WebSiteManagementClient
@@ -96,35 +97,49 @@ def main() -> None:
         )
         print(f"Created resource group '{args.resource_group}'.")
 
-    plan = web_client.app_service_plans.begin_create_or_update(
-        args.resource_group,
-        args.plan_name,
-        AppServicePlan(
-            location=args.location,
-            reserved=True,
-            sku=SkuDescription(name=args.sku, tier=args.sku),
-        ),
-    ).result()
-    print(f"App Service plan '{args.plan_name}' ready.")
-
-    web_client.web_apps.begin_create_or_update(
-        args.resource_group,
-        args.name,
-        Site(
-            location=args.location,
-            server_farm_id=plan.id,
-            reserved=True,
-            https_only=True,
-            site_config=SiteConfig(
-                linux_fx_version="NODE|20-lts",
-                always_on=args.sku != "F1",
-                app_settings=[
-                    NameValuePair(name="SCM_DO_BUILD_DURING_DEPLOYMENT", value="true"),
-                ],
+    try:
+        plan = web_client.app_service_plans.get(
+            args.resource_group,
+            args.plan_name,
+        )
+        print(f"Reusing App Service plan '{args.plan_name}'.")
+    except ResourceNotFoundError:
+        plan = web_client.app_service_plans.begin_create_or_update(
+            args.resource_group,
+            args.plan_name,
+            AppServicePlan(
+                location=args.location,
+                reserved=True,
+                sku=SkuDescription(name=args.sku, tier=args.sku),
             ),
-        ),
-    ).result()
-    print(f"Web App '{args.name}' ready.")
+        ).result()
+        print(f"Created App Service plan '{args.plan_name}'.")
+
+    try:
+        web_client.web_apps.get(args.resource_group, args.name)
+        print(f"Reusing Web App '{args.name}'.")
+    except ResourceNotFoundError:
+        web_client.web_apps.begin_create_or_update(
+            args.resource_group,
+            args.name,
+            Site(
+                location=args.location,
+                server_farm_id=plan.id,
+                reserved=True,
+                https_only=True,
+                site_config=SiteConfig(
+                    linux_fx_version="NODE|20-lts",
+                    always_on=args.sku != "F1",
+                    app_settings=[
+                        NameValuePair(
+                            name="SCM_DO_BUILD_DURING_DEPLOYMENT",
+                            value="true",
+                        ),
+                    ],
+                ),
+            ),
+        ).result()
+        print(f"Created Web App '{args.name}'.")
 
     # New web apps disable SCM basic auth by default; zip deploy needs it enabled.
     web_client.web_apps.update_scm_allowed(
