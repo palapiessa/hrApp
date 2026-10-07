@@ -75,15 +75,29 @@ jobs:
       - name: Fetch linked issue
         env:
           GH_TOKEN: ${{ github.token }}
+          PR_BODY: ${{ steps.pr.outputs.body }}
         run: |
-          ISSUE_NUMBER=27
+          ISSUE_NUMBER=$(python <<'PY'
+          import os
+          import re
 
-          echo "Found issue: $ISSUE_NUMBER"
+          body = os.environ.get("PR_BODY", "")
+          match = re.search(
+              r"(?im)^\s*(?:close[sd]?|fix(?:es|ed)?|resolve[sd]?)\s+(?:[\w.-]+/[\w.-]+)?#(\d+)\b",
+              body,
+          )
 
-          if [ -z "$ISSUE_NUMBER" ]; then
-            echo "No linked issue found in PR body"
-            exit 1
-          fi
+          if not match:
+              raise SystemExit(
+                  "No linked issue found in the PR description. "
+                  "Add a closing reference such as 'Closes #123'."
+              )
+
+          print(match.group(1))
+          PY
+          )
+
+          echo "Found linked issue: $ISSUE_NUMBER"
 
           gh issue view "$ISSUE_NUMBER" \
             --repo "${{ github.repository }}" \
@@ -217,7 +231,14 @@ jobs:
                   if not isinstance(value, str) or not value.strip():
                       raise RuntimeError(f"{field} must be a non-empty string.")
 
-          decision["test_name"] =  "generated_test"
+              decision["test_name"] = re.sub(
+                  r"[^A-Za-z0-9_-]+",
+                  "_",
+                  decision["test_name"],
+              ).strip("_")
+
+              if not decision["test_name"]:
+                  decision["test_name"] = "generated_test"
 
           with open("test-decision.json", "w", encoding="utf-8") as file:
               json.dump(decision, file, indent=2)
