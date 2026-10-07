@@ -9,7 +9,7 @@ const Header = () => {
   return (
     <header className={styles.header}>
       <Typography variant="h4" className={styles.title}>
-        HR Management System
+        BestCom&apos;s Employee App
       </Typography>
 
       {/* ✅ Hamburger icon for mobile */}

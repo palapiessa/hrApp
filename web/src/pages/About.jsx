@@ -7,7 +7,7 @@ function About() {
     <div className={styles.aboutContainer}>
       <h2>About us</h2>
       <p>
-        Welcome to the <strong>HR Employee Management App</strong> — a simple,
+        Welcome to <strong>BestCom&apos;s Employee App</strong> — a simple,
         modern tool designed to help HR teams manage employee data efficiently.
       </p>
 
