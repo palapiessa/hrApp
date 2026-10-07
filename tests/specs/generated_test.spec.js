@@ -5,7 +5,7 @@ test.describe('Employee table search', () => {
     await page.goto('/');
 
     await expect(page).toHaveURL(/\/$/);
-    await expect(page.getByRole('heading', { name: 'HR Management System' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: "BestCom's Employee App" }).first()).toBeVisible();
 
     await page.getByRole('link', { name: 'Employee Table' }).click();
     await page.waitForURL('**/table');
