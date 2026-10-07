@@ -1,4 +1,4 @@
-const { test, expect } = require('@playwright/test');
+import { expect, test } from '@playwright/test';
 
 test.describe('Application branding', () => {
   test('header and About page display BestCom\'s Employee App', async ({ page }) => {

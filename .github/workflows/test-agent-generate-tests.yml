@@ -280,6 +280,8 @@ jobs:
           prompt = f"""
           You are a senior Playwright engineer.
           Generate a complete JavaScript Playwright test file.
+          Since rewuire is not available in ES module scope, use import to add required modules, like this:
+          import { expect, test } from '@playwright/test';
 
           TEST DESCRIPTION:
           {decision["test_description"]}
