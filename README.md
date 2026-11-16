@@ -9,7 +9,7 @@ This system helps teams manage employees, track work experience, automate HR rem
 <p align="center">
   <a href="https://hrapp-1-68tb.onrender.com"><strong>🌐 Live Demo</strong></a> •
   <a href="https://hrapp-bec7.onrender.com/employees"><strong>📡 Backend API</strong></a> •
-  <a href="./Agentic.md"><strong>🤖 Agentic Workflows</strong></a>
+  <a href="./AGENTIC.md"><strong>🤖 Agentic Workflows</strong></a>
 </p>
 
 <p align="center">
