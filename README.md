@@ -8,7 +8,8 @@ This system helps teams manage employees, track work experience, automate HR rem
 
 <p align="center">
   <a href="https://hrapp-1-68tb.onrender.com"><strong>🌐 Live Demo</strong></a> •
-  <a href="https://hrapp-bec7.onrender.com/employees"><strong>📡 Backend API</strong></a>
+  <a href="https://hrapp-bec7.onrender.com/employees"><strong>📡 Backend API</strong></a> •
+  <a href="./Agentic.md"><strong>🤖 Agentic Workflows</strong></a>
 </p>
 
 <p align="center">
@@ -29,20 +30,6 @@ The project combines:
 - GitHub Actions automation with an agentic team,
 - automated tests,
 - and issue-driven documentation updates.
-
----
-
-## 🤖 Developer Agent Workflow
-
-The **Developer Agent** follows a simple documentation-first workflow:
-
-1. **Review the issue** to understand the requested change.
-2. **Select the relevant file** for the update.
-3. **Make the smallest necessary change** while preserving unrelated content.
-4. **Verify the update** matches the issue requirements.
-5. **Return the completed file content** ready to commit.
-
-For this repository, that usually means updating the main README to keep the project overview current and aligned with the issue being worked on.
 
 ---
 
