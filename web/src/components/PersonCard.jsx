@@ -167,12 +167,12 @@ const PersonCard = ({
               </Typography>
             </Typography>
             <Button
-              variant="outlined"
+              variant="contained"
               color="error"
               onClick={handleDelete}
               className={styles.deleteButtonUnderName}
             >
-              Remove
+              delete
             </Button>
           </div>
         </div>
