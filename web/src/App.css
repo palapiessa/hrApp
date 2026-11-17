@@ -63,6 +63,13 @@ select,
 textarea {
   max-width: 100%;
 }
+
+button.delete-button,
+.delete-button {
+  background-color: red;
+  color: black;
+}
+
 @media (max-width: 768px) {
   .container,
   .page,
