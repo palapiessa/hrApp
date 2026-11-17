@@ -71,4 +71,19 @@ Run the tests:
 npm --prefix tests test
 ```
 
-The Playwright configuration starts the frontend automatically at `http://localhost:5173`.
+By default, Playwright tests the deployed app at
+`https://calm-wave-0e0265e03-test.westeurope.6.azurestaticapps.net`.
+No local frontend or backend is needed for these deployed-app tests.
+
+To test locally instead, start the local backend as described above, then run:
+
+```sh
+PLAYWRIGHT_BASE_URL=http://localhost:5173 npm --prefix tests test
+```
+
+For this URL, Playwright starts the local frontend automatically.
+Set `PLAYWRIGHT_BASE_URL` to another URL to test a different deployment.
+
+The GitHub Actions **Playwright Tests** workflow uses the same deployed app by
+default. Its `test` environment variable `PLAYWRIGHT_BASE_URL` can override the
+target URL.

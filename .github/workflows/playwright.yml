@@ -10,6 +10,8 @@ jobs:
   test:
     runs-on: ubuntu-latest
     environment: test
+    env:
+      PLAYWRIGHT_BASE_URL: ${{ vars.PLAYWRIGHT_BASE_URL || 'https://calm-wave-0e0265e03-test.westeurope.6.azurestaticapps.net' }}
 
     steps:
       - name: Checkout repository
@@ -37,7 +39,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Start JSON Server
-        if: ${{ !vars.PLAYWRIGHT_BASE_URL }}
+        if: ${{ env.PLAYWRIGHT_BASE_URL == 'http://localhost:5173' }}
         working-directory: web
         run: |
           npm run server > "$RUNNER_TEMP/json-server.log" 2>&1 &
@@ -47,13 +49,9 @@ jobs:
       - name: Show target URL
         run: |
           echo "PLAYWRIGHT_BASE_URL=$PLAYWRIGHT_BASE_URL"
-        env:
-          PLAYWRIGHT_BASE_URL: ${{ vars.PLAYWRIGHT_BASE_URL }}
             
       - name: Run Playwright tests
         working-directory: tests
-        env:
-          PLAYWRIGHT_BASE_URL: ${{ vars.PLAYWRIGHT_BASE_URL }}
         run: npm test
 
       - name: Upload Playwright report
@@ -73,7 +71,7 @@ jobs:
           retention-days: 14
           
       - name: Upload JSON Server log
-        if: ${{ always() && !vars.PLAYWRIGHT_BASE_URL }}
+        if: ${{ always() && env.PLAYWRIGHT_BASE_URL == 'http://localhost:5173' }}
         uses: actions/upload-artifact@v4
         with:
           name: json-server-log

@@ -5,7 +5,7 @@ test('lists all employees on the home page', async ({ page }) => {
 
   await expect(page).toHaveURL(/\/$/);
   await expect(
-    page.getByRole('heading', { name: 'HR Management System' })
+    page.getByRole('heading', { name: 'BestCom\'s Employee App' })
   ).toBeVisible();
 
   await page.getByRole('link', { name: 'Employee Table' }).click();

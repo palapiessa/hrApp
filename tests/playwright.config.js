@@ -2,10 +2,9 @@ import { defineConfig, devices } from '@playwright/test';
 
 const baseURL =
   process.env.PLAYWRIGHT_BASE_URL ||
-  'http://localhost:5173';
+  'https://calm-wave-0e0265e03-test.westeurope.6.azurestaticapps.net';
 
-const useAzureDeployment =
-  !!process.env.PLAYWRIGHT_BASE_URL;
+const useLocalServer = baseURL === 'http://localhost:5173';
 
 export default defineConfig({
   testDir: './specs',
@@ -22,12 +21,12 @@ export default defineConfig({
       use: { ...devices['Desktop Chrome'] }
     }
   ],
-  webServer: useAzureDeployment
-    ? undefined
-    : {
+  webServer: useLocalServer
+    ? {
         command: 'npm run dev -- --host localhost --port 5173',
         cwd: '../web',
         url: 'http://localhost:5173',
         reuseExistingServer: !process.env.CI
       }
+    : undefined
 });
